@@ -23,3 +23,6 @@ name, so version 2.5 becomes pngwn2b5.z5
 Beta releases need two adjustments in the source file, commented at
 the top. New releases also need a change in the welcome messages,
 towards the bottom of the file.
+
+Release minor version wants updating in the alpha after each beta
+release, ready for the new beta minor release.
