@@ -1,13 +1,13 @@
 ! -*- Mode:inform -*-
 Constant Story "THE SEARCH FOR THE MISSING PENGUIN";
-!Constant Headline "^Alpha Release - FOR MY EYES ONLY!!!^";
- Constant Headline "^Beta release^";
-Release 25; ! Release number: 24 = pngwn2b4
+Constant Headline "^Alpha Release - FOR MY EYES ONLY!!!^";
+!Constant Headline "^Beta release^";
+Release 26; ! Release number: 24 = pngwn2b4
 !Release 4; ! was in latest beta; does it matter?
 Constant Max_Carried = 7;
 Constant Sack_Object = rucksack;
-!Global Releasetype = 0;
-Global Releasetype = 1;
+Global Releasetype = 0;
+!Global Releasetype = 1;
 Replace DrawStatusLine;
 Include "Parser";
 Include "VerbLib";
@@ -3897,7 +3897,7 @@ Object 	-> -> liftbutton "button"
 [Titleboxb;
     box	"************************************"
 	"*The Search for the Missing Penguin*"
-	"************Version 2.5*************"
+	"************Version 2.6*************"
 	"************Beta Release************"
 	"************************************";
     return;
