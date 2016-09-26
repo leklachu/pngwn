@@ -1,0 +1,4215 @@
+! -*- Mode:inform -*-
+Constant Story "THE SEARCH FOR THE MISSING PENGUIN";
+Constant Headline "^Alpha Release - FOR MY EYES ONLY!!!^";
+! Constant Headline "^Beta release^";
+Release 24; ! Release number: 24 = pngwn2b4
+!Release 4; ! was in latest beta; does it matter?
+Constant Max_Carried = 7;
+Constant Sack_Object = rucksack;
+Global Releasetype = 0;
+! Global Releasetype = 1;
+Replace DrawStatusLine;
+Include "Parser";
+Include "VerbLib";
+
+Attribute legible;
+
+Class 	Foresty
+ with	react_before [;
+	 Dig: "The ground may be soft here, but the island is 
+	    rumoured volcanic, so I wouldn't push your luck.";
+	],
+	u_to "You never have been good at climbing trees, and you 
+	    have plenty else to be getting on with.",
+	d_to "You can't go that way.",
+	cant_go "The trees are far too thick for you to push through.";
+
+Object 	icytrees "trees"
+ with	name 'tree' 'trees' 'leaves' 'leaf' 'forest' 'pine' 'branch'
+	    'branches',
+	description
+	    "The trees appear to be pine, but I find it hard to 
+	    tell. They are covered in icicles.",
+	found_in [;
+	    return (location ofclass Foresty);
+	],
+ has 	scenery pluralname transparent;
+
+Object 	-> icicles "icicles"
+ with	name 'ice' 'icicles' 'icicle',
+	description
+	    "Merely ordinary icicles hanging from the leaves of the 
+	    trees.",
+	before [;
+	 Take: "You take an icicle which rapidly melts in your hand.";
+	 Eat:
+	    print "You quickly eat the melting icicle";
+	    if (random(7) == 1)
+		", which actually tasted quite nice despite the 
+		frozen caterpillar inside.";
+	    ". Lovely and refreshing.";
+	],
+ has 	scenery pluralname;
+
+Object 	path "path"
+ with	name 'path' 'road' 'dirt',
+	description
+	    "An ordinary dirt path.",
+	before [;
+	 Enter: "You'll have to use a compass direction";
+	],
+	found_in Beach Junction Clearing Overgrowth Streameast Streamwest Streambed Bridgearea Shedentrance Forestboundary,
+ has 	scenery;
+
+Class 	Canyon
+ with	react_before [;
+	 Dig: "Come back when you've finished the adventure and 
+	    bought yourself a pneumatic drill. Then we can try 
+	    digging.";
+	],
+	d_to "Come back when you've finished the adventure and 
+	    bought yourself a pneumatic drill. Then we can try 
+	    digging.",
+	cant_go "The canyon walls are far too steep to climb.";
+
+Object 	canyonwall "canyon"
+ with	name 'canyon' 'wall' 'walls' 'smooth' 'vertical' 'stone',
+	description
+	    "You are in a big canyon with smooth vertical walls that 
+	    are impossible to climb.",
+	before [;
+	 Climb: "The canyon walls are far too steep to climb.";
+	 Take: "Oh come on, you're standing in a huge stone canyon 
+	    and you want to take it!?!";
+	],
+	found_in [;
+	    return (location ofclass Canyon);
+	],
+ has 	scenery;
+
+Class 	Underground
+ with	name 'underground';
+
+Object 	island "island"
+ with	name 'island',
+	description
+	    "You're on it!",
+	found_in [;
+	    return location;
+	],
+ has 	scenery;
+
+Foresty Beach "Beach"
+ with	name 'sand' 'beach' 'frost' 'mountain' 'sea' 'water' 'horizon',
+	description
+	    "You are on a small frosty beach on the north of a large 
+	    island. The mountain, which is the island, rises out of 
+	    the ocean to the south, and everywhere north of you the 
+	    sea stretches to the horizon. Surrounding the beach 
+	    (where it doesn't meet the ocean) is a thick forest, the 
+	    only exceptions being to the west, where a thin strip of 
+	    beach continues between the trees and the sea, and to 
+	    the south, where a path has been cleared into the 
+	    forest.",
+	before [;
+	 Swim: "The water is far too cold for that.";
+	],
+	s_to Junction,
+	!w_to Streambedmouth,
+	nw_to "The water is far too cold for that.",
+	n_to "The water is far too cold for that.",
+	ne_to "The water is far too cold for that.",
+	in_to [;
+	    PlayerTo(boat);
+	    rtrue;
+	],
+ has 	light;
+
+Object 	-> boat "boat"
+ with	name 'boat' 'fibre' 'fibreglass' 'glass' 'hull' 'real',
+	description
+	    "A small fibreglass boat with a Yamaha outboard motor. 
+	    It is grounded on the beach.",
+	inside_description
+	    "You are sitting inside the small fibreglass boat you came in.",
+	before [;
+	 Take: "It may be small, but it's too heavy for you to be
+	    lugging around.";
+	],
+	react_before [;
+	 Enter:
+	    if (noun == boat)
+		<<go in_obj>>;
+	],
+ has 	static container open enterable;
+
+! The key is now oversized. So you *can't* carry it across the stream
+Object 	-> -> shedkey "large iron key"
+ with	name 'key' 'metal' 'large' 'iron' 'oversized',
+	description
+	    "An oversized metal key, which you brought with you. 
+	    About a foot long and bulky enough to have serious 
+	    weight, this key should admit you to some of the old 
+	    disused facilities on the island.";
+
+Object 	-> motor "outboard motor"
+ with	name 'outboard' 'motor' 'rig' 'engine' 'yamaha' 'real',
+	description [;
+	    print "An old Yamaha petrol-powered engine";
+	    if (self has open)
+		print " with the top open revealing a hidden compartment";
+	    print_ret ". Unfortunately you broke it landing on the 
+		beach, and the propeller has come off.";
+	],
+	before [;
+	 Push, Touch, Rub:
+	    if (self has openable)
+		<<Open self>>;
+	    give self open openable container;
+	    "The top of the motor springs open, revealing a hidden 
+	    compartment with a camera inside.";
+	 Search:
+	    if (self hasnt openable)
+		"You find nothing of interest.";
+	 GoIn: <<Enter self>>;
+	],
+	capacity 8,
+ has 	static concealed;
+
+Object 	-> -> camera "camera"
+ with	name 'camera' 'compact' 'lightweight',
+	description
+	    "A modern compact, lightweight 35mm exposure camera with 
+	    automatic flash, film-winding, focus, exposure, 
+	    aiming... I wouldn't count on this to do what you want 
+	    it to do.",
+ has 	edible;
+
+Object 	-> -> compartment "hidden compartment"
+ with	name 'compartment' 'hidden' 'secret',
+	description
+	    "A fairly large open space inside the motor, nicely 
+	    sealed when closed to prevent water entering.",
+	before [;
+	 Search: <<Search motor>>;
+	 Receive: <<Insert noun motor>>;
+	 Close: <<Close motor>>;
+	],
+ has 	static concealed;
+
+Object 	-> -> seal "rubber seal"
+ with	name 'seal' 'sealing' 'rubber',
+	description
+	    "Just an ordinary rubber seal",
+ has 	static concealed;
+
+Object 	-> propeller "propeller"
+ with	name 'propeller' 'prop',
+	description
+	    "The metal propeller of your boat's outboard motor.",
+	after [;
+	 Take, Examine: give self ~concealed;
+	],
+ has 	concealed;
+
+Foresty Junction "Junction"
+ with	name 'clearing',
+	description
+	    "You come to a junction within the forest. A path runs 
+	    east/west, and splits off north back to the beach.",
+	n_to Beach,
+	e_to Clearing,
+	w_to Streameast,
+ has 	light;
+
+Foresty Clearing "Clearing"
+ with	name 'clearing',
+	description [;
+	    print "You come to a small clearing.^ A lone tree stands 
+		here and two massive arches run across the path at 
+		right-angles to it, each standing on two curious 
+		stone frogs that draw your attention; one frog is at 
+		each end of each arch";
+	    if (arches has light)
+		print "^The arches glow brightly";
+	    ".";
+	],
+	w_to [;
+	    if (arches hasnt on)
+		move bird to self;
+	    return Junction;
+	],
+	e_to [;
+	    if (arches hasnt on)
+ 		move bird to self;
+	    return arches;
+	],
+ has 	light;
+
+Object 	-> arches "arches"
+ with	name 'arch' 'arches' 'metal',
+	description [;
+	    print "Two large metal arches, spanning most of the 
+		clearing. Each arch rests on two stone frogs, 
+		pointing outward and away from the other arch. There 
+		is a rope connecting the two arches at the top.";
+	    if (self has light)
+		" The arches glow brightly, even in broad daylight.";
+	    "";
+	],
+	switched,
+	before [;
+	 Climb: "They're far too slippery for that.";
+	],
+	door_to overgrowth,
+	door_dir e_obj,
+ has 	scenery door pluralname open;
+
+Object 	-> rope "rope"
+ with	name 'rope',
+	description
+	    "The rope is stretched between the centres of the two arches.",
+	before [;
+	 Examine: rfalse;
+	 default: "That's out of reach.";
+	],
+ has 	scenery;
+
+Object 	-> frogs "frogs"
+ with	name 'frog' 'frogs' 'stone',
+	description [;
+	    if (self.fsearched == false){
+		self.fsearched = true;
+		"The frogs do not appear as curious as you first 
+		thought, until you notice one which has a switch on 
+		it.";
+	    }
+	    "Just ordinary curious-looking stone frogs (if there is 
+	    such a thing) with a switch on one of them.";
+	],
+	fsearched,
+	before [;
+	 Search: <<Examine self>>;
+	],
+ has 	static pluralname concealed;
+
+Object 	-> switch "switch"
+ with	name 'switch' 'button',
+	description
+	    "A small grey switch",
+	before [;
+	 Push:
+	    if (self has on)
+		<<Switchoff self>>;
+	    <<Switchon self>>;
+	],
+	after [;
+	 SwitchOn:
+	    print "You switch the switch on.^";
+	    if (dial has on){
+		print "A bright glow erupts from each of the
+		    arches.^";
+		if (bird notin lonetree){
+		    move bird to lonetree;
+		    print "The bird is startled and flutters off the 
+			rope into the tree";
+		    if (parent(stick) == 0){
+			arches.switched = true;
+			move stick to location;
+			print ", dislodging a large stick as it
+			    lands.^";
+		    }
+		    else print ".^";
+		}
+		give arches light;
+		"The arches now glow brightly, even in broad 
+		daylight.";
+	    }
+	    rtrue;
+	 SwitchOff:
+	    print "You switch the switch off.^";
+	    if (dial has on){
+		give arches ~light;
+		print "The arches no longer glow.^";
+	    }
+	    rtrue;
+	],
+ has 	static concealed switchable;
+
+Object 	-> bird "brightly coloured bird"
+ with	name 'bright' 'brightly' 'coloured' 'colour' 'bird',
+	description
+	    "It's what you might call a Technicolour bird - far too 
+	    colourful for this climate. However, the fact remains 
+	    that it is here... ours is not to reason why.",
+	initial
+	    "A bird perches on a rope stretched between the two arches.",
+ has 	animate;
+
+Object 	-> lonetree "lone tree"
+ with	name 'lone' 'tree',
+	description
+	    "A tree, not dissimilar to all the others, but standing 
+	    separate to the main forest.",
+	before [;
+	 Receive: <drop noun>;
+	    print_ret "You throw", (the) noun, " up, but miss the tree and", (the) noun, " falls back down.";
+	],
+ has 	scenery container transparent;
+
+Object 	-> archglow "glow"
+ with	name 'glow',
+	before [;
+	 default:
+	    if (arches hasnt light)
+		"You can't see any such thing.";
+	],
+ has 	scenery;
+
+Object 	stick "stick"
+ with	name 'stick' 'twig' 'long' 'brown' 'branch',
+	description
+	    "A sturdy brown branch off the tree.";
+
+Foresty Overgrowth "Overgrowth"
+ with	name 'overgrowth' 'bush' 'bushes' 'path',
+	description
+	    "The path here becomes covered with thick bushes. You 
+	    can go no further. The path returns to the west.",
+	w_to Clearing,
+ has 	light;
+
+Foresty Streameast "The east bank"
+ with	description [;
+	    print "You are standing on the east bank of ";
+	    if (stream in Streambed)
+		print "a large, fast-flowing stream which cuts a 
+		    path through the trees and";
+	    else
+		print "a large stream bed which";
+	    " passes across the e/w path you stand on";
+	],
+	n_to [;
+	    if (stream notin streambed)
+		"The stream cut a path between and around trees - it 
+		did not clear the trees, that you could get through.";
+	    "Added to the forest being so thick you can't push 
+	    through, there's an awful lot of water going that way as 
+	    well. You can't go that way.";
+	],
+	e_to Junction,
+	s_to [;
+	    if (stream notin streambed)
+		"The stream cut a path between and around trees - it 
+		did not clear the trees, that you could get through.";
+	    "Added to the forest being so thick you can't push 
+	    through, there's an awful lot of water going that way as 
+	    well. You can't go that way.";
+	],
+	w_to [;
+	    if (stream notin streambed)
+		return Streamwest;
+	    return fstream;
+	],
+!	in_to [;
+!	    if (stream notin streambed)
+!		return Streambed;
+!	    if (stream.preenter() ~= 0) rtrue;
+!	    return Streambed;
+!	],
+ has 	light;
+
+Foresty Streamwest "The west bank"
+ with	description [;
+	    print "You are standing on the west bank of ";
+	    if (stream in Streambed)
+		print "a large, fast-flowing stream which cuts a 
+		    path through the trees and";
+	    else
+		print "a large stream bed which";
+	    " passes across the e/w path you stand on";
+	],
+	n_to [;
+	    if (stream notin streambed)
+		"The stream cut a path between and around trees - it 
+		did not clear the trees, that you could get through.";
+	    "Added to the forest being so thick you can't push 
+	    through, there's an awful lot of water going that way as 
+	    well. You can't go that way.";
+	],
+	e_to [;
+	    if (stream notin streambed)
+		return Streameast;
+	    return fstream;
+	],
+	s_to [;
+	    if (stream notin streambed)
+		"The stream cut a path between and around trees - it 
+		did not clear the trees, that you could get through.";
+	    "Added to the forest being so thick you can't push 
+	    through, there's an awful lot of water going that way as 
+	    well. You can't go that way.";
+	],
+	w_to Bridgearea,
+!	in_to [;
+!	    if (stream notin streambed)
+!		return Streambed;
+!	    if (stream.preenter() ~= 0) rtrue;
+!	    return Streambed;
+!	],
+ has 	light;
+
+Foresty Streambed
+ with	short_name [;
+	    if (stream in self)
+		print "Stream";
+	    else
+		print "Stream bed";
+	    rtrue;
+	],
+	description [;
+	    if (stream in self)
+		print "You are in a large stream, capable of 
+		    knocking you over if you're not careful. The 
+		    stream flows to the north, and ";
+	    else
+		print "The stream bed you stand on here leads north 
+		    and south; ";
+ 			"from either side of it what used to be one 
+	    path leads off to the east and the west.";
+	],
+	after [;
+	 Drop:
+	    if (stream notin self) rfalse;
+	    move noun to Streambedmouth;
+	    "You watch as ", (the) noun, " is carried away by the 
+		raging waters.";
+	],
+	n_to Streambedmouth,
+	e_to Streameast,
+	s_to Bifurcation,
+	w_to Streamwest,
+	out_to "You'll have to specify a compass direction.",
+ has 	light;
+
+Object 	-> stream "stream"
+ with	name 'stream' 'water' 'fast' 'fast-flowing' 'flow' 'river' 'flowing',
+	description
+	    "A sizable body of fast-flowing water. You wouldn't 
+	    want to step in it without something to help you.",
+	before [;
+	 Drink: "Mmm, very refreshing.";
+	 Enter: "Aah, lovely fresh water... Whoa that's cold!";
+	 Receive: "Without wanting to spoil your fun - some objects
+ 	    you can't do without. That may be one."; ! booring
+	],
+	after [;
+	 Receive: ! Irrelevant now
+	    if (self in Streambed)
+		move noun to Streambedmouth;
+	    else
+		move noun to Streammouth;
+	    "You watch as ", (the) noun, " is carried away by the 
+		raging waters.";
+	],
+	preenter [;
+	    if (stick notin player)
+		"The stream will knock you down if you don't have 
+		something to help you keep your balance.";
+	    if (rucksack in player){
+		if (children(player) > 2)
+		    "You can't keep your balance in the stream 
+		    holding that much.";
+		if (rucksack hasnt worn){
+		    give rucksack worn;
+		    print "(first putting the rucksack on)^";
+		}
+		if (rucksack has open){
+		    give rucksack ~open;
+		    print "(first closing the rucksack so nothing 
+			gets wet)^";
+		}
+	    }
+	    if (children(player) > 1 && rucksack notin player)
+		"You can't keep your balance in the stream carrying 
+		that much.";
+	    rfalse;
+	],
+ has 	scenery container open;
+
+Object 	fstream "stream"
+ with	name 'stream' 'water' 'fast' 'fast-flowing' 'flow' 'river'
+	    'flowing',
+	description
+	    "A sizable body of fast-flowing water. You wouldn't 
+	    want to step in it without something to help you.",
+	before [;
+	 Drink: "Mmm, very refreshing.";
+!	 Enter:
+!	    if (verb_word == 'cross' || verb_word == 'ford')
+!		rfalse;
+!	    <<GoIn>>;
+	 Receive: "Without wanting to spoil your fun - some objects 
+	    you can't do without. That may be one."; ! booring
+	],
+	door_to [;
+	    if (stream.preenter() ~= 0) rtrue;
+	    print "You cross the stream.";
+	    if (self in Streameast)
+		return Streamwest;
+	    return Streameast;
+	],
+	door_dir [;
+	    if (self in Streameast)
+		return w_to;
+	    return e_to;
+	],
+	after [; ! also irrelevant now
+	 Receive:
+	    move noun to Streambedmouth;
+	    "You watch as ", (the) noun, " is carried away by the 
+		raging waters.";
+	],
+	found_in Streamwest Streameast,
+ has 	scenery container open door;
+
+Foresty Bridgearea "Bridge"
+ with	description [;
+	    print "A stone bridge here spans a large stream";
+	    if (stream notin self) print " bed";
+	    print ", and joins together the paths east and west into 
+		the forest. Beside the stream";
+	    if (stream notin self) print " bed";
+	    ", on the western bank, a small path runs north.";
+	],
+	e_to Streamwest,
+	n_to [;
+	    !if (stream notin self) return Streambed; !eh?
+	    print "The stream";
+	    if (stream notin self) print " bed";
+	    " is too steep to follow Northwards.";
+	],
+	s_to [;
+	    if (stream.preenter() ~= 0) rtrue;
+	    return Bifurcation;
+	],
+	w_to Shedentrance,
+	in_to [;
+	    "'In' to what? The cutting? It's a bit too steep, 
+	    slippery, deep, and otherwise dangerous for that. Else 
+	    I'd let you - I'm sure there's great adventure down 
+	    there... from which no man returneth.";
+	],
+ has 	light;
+
+Object 	-> bridge "bridge"
+ with	name 'bridge' 'stone',
+	description
+	    "Just your average stone arch bridge. The colour: hmm... 
+	    maize, perhaps? Never mind - it probably doesn't matter 
+	    anyway.",
+	before [;
+	 Enter: "You're already on it!";
+	 Exit: "That's all very well, but which direction do you 
+	    want to go off it?";
+	],
+ has 	scenery;
+
+Object 	-> bridgebed "stream bed"
+ with	name 'bed' 'stream' 'mud' 'muddy' 'sea' 'water',
+	description
+	    "A muddy stream bed where water must have flowed 
+	    recently.",
+ has 	scenery;
+
+! It's Gone! All gone...
+Foresty Streambedmouth "Stream mouth"
+ with	description [;
+	    if (mthstrm in self)
+		print "Out of the forest flows a large stream, which 
+		    runs north across the beach into the sea.";
+	    else
+		print "You can see evidence here that a stream has 
+		    run through the forest, and its bed runs down 
+		    the beach to the sea.";
+	    " The beach ends here, cut off by the forest reaching 
+	    the shore. East leads back to the main beach.";
+	],
+	before [;
+	 Swim: "The water is far too cold for that.";
+	],
+	e_to Beach,
+	nw_to "The water is far too cold for that.",
+	n_to "The water is far too cold for that.",
+	ne_to "The water is far too cold for that.",
+ has 	light;
+
+Object 	-> mthstrm "stream"
+ with	name 'stream' 'water' 'fast' 'fast-flowing' 'flow' 'river'
+	    'flowing',
+	description
+	    "A sizable body of fast-flowing water. You wouldn't 
+	    want to step in it without something to help you.",
+	door_to [;
+	    if (self in Streammouth)
+		return Bridgearea;
+	    return Streambed;
+	],
+	door_dir n_to,
+ has 	door scenery open;
+
+! This one's gone too.
+Foresty Streammouth "Stream mouth"
+ with	description [;
+	    if (mthstrm in self)
+		"The stream runs gently into the sea, making a 
+		relaxing whooshing sound. The trees rustle icily in 
+		the cold wind, and you dream of the little island in 
+		the pacific you always wanted to own.";
+	    "This is the end of the stream bed, where the stream 
+	    would flow into the sea, if it were running here.";
+	],
+	before [;
+	 Swim: "The water is far too cold for that.";
+	],
+	s_to [;
+	    if (stream notin Bridgearea)
+		return Bridgearea;
+	    if (stream.preenter() ~= 0) rtrue;
+	    return Bridgearea;
+	],
+	nw_to "The water is far too cold for that.",
+	n_to "The water is far too cold for that.",
+	ne_to "The water is far too cold for that.",
+ has 	light;
+
+Object 	bedmouth "stream bed"
+ with	name 'mouth' 'stream' 'bed' 'sea',
+	before [;
+	 Take: "The stream bed is more likely to carry you, rather 
+	    than you it!";
+	],
+	found_in Streammouth Streambedmouth,
+ has 	scenery;
+
+Foresty Bifurcation "Bifurcation"
+ with	name 'fork' 'bifurcation',
+	description [;
+	    if (stream in Streambed)
+		"The stream flows down from the south, but here 
+		leaves its original course, deflected by a boulder 
+		to the north-east, where it cuts a path through the 
+		forest.";
+	    "The stream runs south/north. A boulder stands to the 
+	    side, blocking the stream from running down a path to 
+	    the north-east";
+	],
+	n_to [;
+	    if (stream in Streambed)
+		return Bridgearea;
+	    if (stream.preenter() ~= 0) rtrue;
+	    return Bridgearea;
+	],
+	ne_to [; !Now disallowing walking up/down diverted stream path
+	    if (stream notin Streambed)
+		"The stream cut a path between and around trees - it 
+		did not clear the trees, that you could get through.";
+	    "Added to the forest being so thick you can't push 
+	    through, there's an awful lot of water going that way as 
+	    well. You can't go that way.";
+	],
+	s_to [;
+	    if (stream.preenter() ~= 0) rtrue;
+	    return Fallcliff;
+	],
+ has 	light;
+
+Object 	-> movingstream "stream"
+ with	name 'stream' 'water' 'flow' 'flowing' 'fast',
+	description [;
+	    print "A sizable body of fast-flowing water";
+	    if (stream in Streambed)
+		print " deflected by the boulder in its path.";
+	    else
+		print " now flowing where it ought.";
+	    rfalse;
+	],
+	after [;
+	 Receive:
+	    if (stream in streambed)
+		move noun to Streambedmouth;
+	    else
+		move noun to Streammouth;
+	    "You watch as ", (the) noun, " is carried away by the 
+		raging waters.";
+	],
+ has 	scenery;
+
+Object 	-> boulder "boulder"
+ with	name 'boulder' 'rock' 'stone',
+	description !Maybe something more obvious here?
+	    "A large chunk of rock - like any boulder really. It 
+	    sits on the ground determining the path of the stream.",
+	bmoved,
+	try,
+	before [;
+	 Push:
+	    if (stream in Streambed){
+		move bridgebed to Streambed;
+		move stream to Bridgearea;
+		move mthstrm to Streammouth;
+		give fstream absent;
+		print "With a mighty push you move the boulder 
+		    across into the current path of the stream, 
+		    allowing it to flow";
+		if (self.bmoved == false){
+		    self.bmoved = true;
+		    give Streambed ~visited;
+		    print " once again";
+		}
+		print_ret " along its natural course.";
+	    }
+	    move bridgebed to Bridgearea;
+	    self.washaway(Streambed, Streambedmouth);
+	    move stream to Streambed;
+	    move mthstrm to Streambedmouth;
+	    give fstream ~absent;
+	    print_ret "With a mighty push you move the boulder back 
+		across the natural path of the stream forcing it to 
+		flow down the alternative route";
+	 PushDir:
+	    if (second == e_obj && stream in streambed)
+		<<Push self>>;
+	    if (second == w_obj && stream in bridgearea)
+		<<Push self>>;
+	    "Pushing the boulder that way just isn't going to be 
+	    productive.";
+	 Pull:
+	    "Not something of that magnitude, you can't. You simply 
+	    can't get a good enough grip on it.";
+	 Take:
+	    if (self.try)
+		"It's not worth straining your back to try that 
+		again.";
+	    self.try = true;
+	    "Go on then, try it, but don't come crying to me when 
+	    you fail.";
+	],
+	washaway [place deposit;
+	    while (children(place) ~= 0)
+		move child(place) to deposit;
+	],
+ has 	static;
+
+Foresty Fallcliff "Waterfall"
+ with	description [;
+	    print "Towering in front of you is a tall cliff facing 
+		north, with a hole about a quarter of the way down";
+	    if (waterswitch has on)
+		print ", letting loose a quantity of water that 
+		    forms a spectacular waterfall.";
+	    else
+		print ". Out of another hole in the bottom flows a 
+		    vast quantity of water.";
+	    " The water forms a large stream flowing north.";
+	],
+	n_to [;
+	    if (stream.preenter() ~= 0) rtrue;
+	    return Bifurcation;
+	],
+	s_to bottomhole,
+	in_to [;
+	    <<Enter cabin>>;
+	],
+ has 	light;
+
+Object 	-> cliff "cliff"
+ with	name 'cliff' 'rocky' 'face',
+	description
+	    "A large cliff face to your south.",
+ has 	scenery;
+
+Object 	-> cabin "cabin"
+ with	name 'cabin' 'wooden' 'wood' 'small',
+	description
+	    "A small wooden cabin.",
+	inside_description [;
+	    print "The cabin has just enough space for one man to 
+		stand in.";
+	    if (self hasnt open)
+		" Light filters in through the cracks in the walls.";
+	    "";
+	],
+	initial
+	    "Nearby stands a small wooden cabin.",
+	with_key shedkey,
+ has 	static enterable openable lockable locked container light;
+
+Object 	-> -> waterswitch "blue switch"
+ with	name 'switch' 'large' 'generator' 'blue',
+	description
+	    "A large blue switch labelled ~Generator~.",
+	before [;
+	 Push: "That isn't a push switch; try switching it.";
+	],
+	after [;
+	 SwitchOn:
+	    move waterfall to Fallcliff;
+	    remove tophole;
+	    move mainhole to Fallcliff;
+	    move undergroundstream to Cave;
+	    move codedoor to Codetunnel;
+	    if (epowerdial.setting == 1){
+		if (waterlever has on && vaultwater in vault)
+		    waterlever.turnon();
+		if (waterlever hasnt on && vaultwater notin vault)
+		    waterlever.turnoff();
+		rfalse;
+	    }
+	    if (epowerdial.setting == 2){
+		if (stonelever has on && slabbutton hasnt on)
+		    stonelever.turnon(true);
+		if (stonelever hasnt on && slabbutton has on)
+		    stonelever.turnoff(true);
+		rfalse;
+	    }
+	    if (epowerdial.setting == 3){
+		if (stonelever has on && slabbutton hasnt on)
+		    stonelever.turnon(true);
+		if (stonelever hasnt on && slabbutton has on)
+		    stonelever.turnoff(true);
+		if (waterlever has on && vaultwater in vault)
+		    waterlever.turnon();
+		if (waterlever hasnt on && vaultwater notin vault)
+		    waterlever.turnoff();
+		rfalse;
+	    }
+	 SwitchOff:
+	    remove waterfall;
+	    move tophole to Fallcliff;
+	    remove mainhole;
+	    remove undergroundstream;
+	    if (epowerdial.setting ~= 3){
+		give colourdoorbutton ~on;
+		colourcontrol.changedoors();
+	    }
+	],
+ has 	static switchable on;
+
+Object 	-> fallstream "stream"
+ with	name 'stream' 'water' 'fast' 'fast-flowing' 'flow' 'river' 'flowing',
+	description
+	    "A sizable body of fast-flowing water.",
+	after [;
+	 Receive:
+	    if (stream in streambed)
+		move noun to Streambedmouth;
+	    else
+		move noun to Streammouth;
+	    "You watch as ", (the) noun, " is carried away by the 
+		raging waters.";
+	],
+ has 	scenery;
+
+Object 	-> waterfall "waterfall"
+ with	name 'water' 'waterfall' 'majestic' 'spectacular',
+	description
+	    "A majestic waterfall flowing out of the cliff face 
+	    about three-quarters of the way up.",
+ has 	scenery;
+
+Object 	-> mainhole "hole"
+ with	name 'hole' 'deep' 'top',
+	description
+	    "A rectangular hole in the cliff face with water gushing 
+	    out of it,",
+ has 	scenery;
+
+Object 	-> bottomhole "bottom hole"
+ with	name 'hole' 'deep' 'bottom' 'tunnel',
+	description [;
+	    if (waterfall notin Fallcliff)
+		"A rectangular hole at the bottom of the cliff with 
+		water gushing out of it,";
+	    "A deep rectangular hole extending far back into the 
+	    bottom of the cliff face";
+	],
+	door_to [;
+	    if (waterswitch has on)
+		return Clifftunnel;
+	    "You can't go up the tunnel when it's full of rushing 
+	    water!";
+	],
+	door_dir s_to,
+ has 	scenery door open;
+
+Object 	tophole "top hole"
+ with	name 'hole' 'deep' 'top',
+	description
+	    "A deep rectangular hole extending far back into the 
+	    cliff face",
+ has 	scenery;
+
+Underground Clifftunnel "Dead end"
+ with	name 'dead' 'end' 'rectangular' 'tunnel',
+	description
+	    "The tunnel slopes gently upward, leading deep into the 
+	    cliff.",
+	n_to Fallcliff,
+	s_to [;
+	    "The large wooden panel blocks your way.";
+	];
+
+Object 	-> cliffpanel "large wooden panel"
+ with	name 'large' 'wooden' 'wood' 'panel',
+	description
+	    "A large and rather plain rectangular wooden panel.",
+	initial
+	    "A large wooden panel fills the rectangular tunnel, 
+	    blocking your way.",
+ has 	static;
+
+Foresty Shedentrance "Outside the shed"
+ with	name 'outside',
+	description
+	    "You are outside a large shed to the west. The path east 
+	    returns to the stone bridge.",
+	e_to Bridgearea,
+	w_to sheddoor,
+	in_to sheddoor,
+ has 	light;
+
+Object 	-> fshed "shed"
+ with	name 'shed' 'building' 'wood' 'wooden' 'lodge' 'hut',
+	description
+	    "A large brown wooden shed, made, incidentally out of 
+	    wood, with a prominent door (also wooden) on the front.",
+	before [;
+	 Enter, Go, GoIn: <<go w_obj>>;
+	 Open: <<Open sheddoor>>;
+	 Close: <<Close sheddoor>>;
+	 Unlock: <<Unlock sheddoor second>>;
+	 Lock: <<Lock sheddoor second>>;
+	],
+ has 	scenery;
+
+Object 	sheddoor "shed door"
+ with	name 'door' 'shed door' 'wood' 'wooden' 'exit' 'entrance',
+	description
+	    "A plain but prominent wooden door with a brass handle 
+	    and lock.",
+	with_key shedkey,
+	door_to [;
+	    if (self in Shedentrance)
+		return Shed;
+	    return Shedentrance;
+	],
+	door_dir [;
+	    if (self in Shedentrance)
+		return w_to;
+	    return e_to;
+	],
+	found_in Shedentrance Shed,
+ has 	scenery door openable lockable locked transparent;
+
+Object 	-> handle "brass handle"
+ with	name 'handle' 'brass' 'metal',
+	description
+	    "It's the brass handle used for opening the door.";
+
+Object 	-> lock "brass lock"
+ with	name 'lock' 'brass' 'metal',
+	description
+	    "It's a standard door lock, which one would unlock with 
+	    an ordinary key.",
+	before [;
+	 Unlock: <<Unlock sheddoor second>>;
+	 Lock: <<Lock sheddoor second>>;
+	];
+
+Object 	Shed "Shed"
+ with	name 'corner',
+	description
+	    "More spacious inside than it looks from the outside, 
+	    the inside is almost completely empty. There is a door 
+	    to the east, an open doorway south and a hole downwards.",
+	e_to sheddoor,
+	s_to Forestboundary,
+	d_to holedoor,
+	out_to "Which way out?",
+ has 	light;
+
+Object 	-> dial "dial"
+ with	name 'dial',
+	description [;
+	    print "A dial with two settings - ~workroom~ and 
+		~signals~. It is currently set to ";
+	    if (dial has on)
+		"~signals~.";
+	    "~workroom~.";
+	],
+	before [;
+	 SwitchOn, SwitchOff, Set: <<Turn self>>;
+	 Turn:
+	    if (self has on){
+		give self ~on;
+		give Hole light;
+		give Workroom light;
+		move markings to Workroom;
+		if (lever has on){
+		    move securedoor to Hole;
+		    move backdoor to Workroom;
+		    remove backdoorway;
+		}
+		if (switch has on)
+		    give arches ~light;
+		"You turn the dial to ~workroom~.";
+	    }
+	    give self on;
+	    give Hole ~light;
+	    give Workroom ~light;
+	    remove markings;
+	    remove securedoor;
+	    remove backdoor;
+	    move backdoorway to Workroom;
+	    if (switch has on)
+		give arches light;
+	    "You turn the dial to ~signals~.";
+	 SetTo:
+	    if (self has on){
+		if (second == 'signals')
+		    "The dial's already set to that.";
+		if (second == 'workroom')
+		    <<Turn self>>;
+	    }
+	    else {
+		if (second == 'workroom')
+		    "The dial's already set to that.";
+		if (second == 'signals')
+		    <<Turn self>>;
+	    }
+	    "You can't set the dial to that.";
+	],
+ has 	static on;
+
+Object 	-> holedoor "hole"
+ with	name 'hole' 'dark' 'deep' 'black',
+	description
+	    "A deep, dark hole, going, incidentally, down.",
+	door_to Hole,
+	door_dir d_to,
+ has 	door open scenery;
+
+Object 	-> finshed "shed"
+ with	name 'shed' 'building' 'wood' 'wooden' 'lodge' 'hut',
+	description
+	    "A large brown wooden shed, made, incidentally out of 
+	    wood, with a prominent door (also wooden) on the front.",
+	before [;
+	 Exit: <<go out_obj>>;
+	 Open: <<Open sheddoor>>;
+	 Close: <<Close sheddoor>>;
+	 Unlock: <<Unlock sheddoor second>>;
+	 Lock: <<Lock sheddoor second>>;
+	],
+ has 	scenery;
+
+Object 	-> table "table"
+ with	name 'table' 'desk',
+	description
+	    "A solid oak table standing in the corner of the shed.",
+	before [;
+	 Take:
+	    "You're not seriously thinking of carrying that around 
+	    with you are you?";
+	 Push:
+	    "No. There are enough things in this adventure for you 
+	    to exercise those puny muscles of yours without making 
+	    extra work for yourself.";
+	],
+ has 	static supporter;
+
+Object 	-> -> instructions "sheet of paper"
+ with	name 'paper' 'sheet' 'instructions' 'writing',
+	description
+	    "The faded writing and torn edge suggest that this piece 
+	    of paper was ripped out of a diary some time ago.",
+	before [;
+	 Read:
+	    "It reads:^^ it again. The only way I can think to 
+	    describe it is disproportional. Hopefully we can have 
+	    longer to document information tomorrow.^^ 9th^ Things 
+	    heating up around here. Hubert got a call to say we were 
+	    going home; the team don't want to go. Looks like we'll 
+	    be leaving anyway. Didn't see it again today, perhaps 
+	    sometime we can come back and finish our studies.^^ 
+	    10th^ Just about to leave the lodge and get on board our 
+	    big steamer, Wilfred reckons they'll have to send 
+	    someone over to photograph it to prove it exists before 
+	    they grant us the money to come back here and continue. 
+	    Oh well, hope they do it soon.";
+	],
+ has 	legible;
+
+Object 	-> doorway "doorway"
+ with	name 'doorway' 'entrance' 'exit' 'opening',
+	description
+	    "An opening in the side of the shed where a door once stood",
+ has 	scenery;
+
+Object 	-> modelboat "model boat"
+ with	name 'model' 'boat' 'notbroken',
+	description
+	    "A small model boat. You can just make out a mark on the motor.",
+ has 	transparent concealed;
+
+Object 	-> -> modelmotor "motor"
+ with	name 'motor' 'craft' 'crafted',
+	description
+	    "A well-crafted motor on the model boat. You can just 
+	    make out a mark on it.",
+	before [;
+	 Push, Touch, Rub:
+	    print "You run your finger across the motor, until it 
+		touches the mark. ";
+	    <<Push fingermark>>;
+	];
+
+Object 	-> -> fixing "fixing"
+ with	name 'joint' 'glue' 'fixing',
+	description
+	    "The motor appears to be glued on to the boat.";
+
+Object 	-> -> fingermark "mark"
+ with	name 'print' 'mark' 'dirt' 'fingerprint',
+	description
+	    "It looks like somebody's put their dirty finger here a 
+	    few to many times and left a mark.",
+	boatholder,
+	before [;
+	 Push, Touch, Rub:
+	    self.boatholder = parent(modelboat);
+	    move brokenboat to self.boatholder;
+	    remove modelboat;
+	    "As you depress the mark, the motor seems to open like 
+	    some child's toy, but then the whole model breaks open 
+	    completely revealing a mess of springs and other broken 
+	    mechanisms.";
+	];
+
+Object 	brokenboat "broken model boat"
+ with	name 'model' 'boat' 'broken' 'wreckage' 'wreck',
+	description
+	    "A completely broken model boat. What cruel person would 
+	    break what must have been such a nice model?",
+	before [;
+	 Tie: "That is far beyond your expertise.";
+	],
+ has 	transparent;
+
+Object 	-> mechanisms "mechanisms"
+ with	name
+	    'mechanism' 'mechanisms' 'gear' 'gears' 'spring' 'springs' 'bits',
+	description
+	    "A complete mess of springs and other broken mechanisms. 
+	    Not very useful.",
+	before [;
+	 Tie: "That is far beyond your expertise.";
+	 Mend: "That is far beyond your expertise.";
+	],
+ has 	pluralname;
+
+Foresty Forestboundary "Forest boundary"
+ with	description
+	    "You are at the point where the forest ends, and the 
+	    path continues south into a canyon. The trees grow so 
+	    close to where the canyon starts that you can only go 
+	    north and south.",
+	n_to Shed,
+	s_to Canyonjunction,
+	se_to "The canyon walls are far too steep to climb.",
+	sw_to "The canyon walls are far too steep to climb.",
+ has 	light;
+
+Canyon Canyonjunction "Canyon"
+ with	description
+	    "You are in a smooth, steep-sided canyon running e/w, 
+	    with a branch running north.",
+	n_to Forestboundary,
+	e_to Ropeladder,
+	w_to Chasmtop,
+ has 	light;
+
+Canyon Ropeladder "Rope ladder"
+ with	description
+	    "There is a rope ladder hanging down the south wall here.",
+	w_to Canyonjunction,
+	e_to Caveentrance,
+	s_to ladder,
+	u_to ladder,
+ has 	light;
+
+Object 	-> ladder "rope ladder"
+ with	name 'ladder' 'rope' 'ropeladder',
+	description
+	    "A rope ladder hanging down the southern canyon wall, 
+	    fastened at both ends.",
+	before [;
+	 Take: "That's fixed in place.";
+	 Climb: <<Enter self>>;
+	],
+	found_in Ropeladder Obspoint,
+	door_to [;
+	    if (self in Ropeladder)
+		return Obspoint;
+	    return Ropeladder;
+	],
+	door_dir [;
+	    if (self in Ropeladder)
+		return u_to;
+	    return d_to;
+	],
+ has 	scenery door open transparent;
+
+Object 	-> -> ropend "rope ladder ends"
+ with	name 'end' 'ends',
+	description
+	    "They're fastened to the canyon walls.",
+ has 	pluralname;
+
+Canyon Caveentrance "Cave entrance"
+ with	description [;
+	    if (quartzdoor has locked)
+		"The canyon ends, and it looks as if there is a cave 
+		to the east, however the entrance is carefully 
+		blocked up with rocks.";
+	    "The canyon ends, leading into a cave in the eastern 
+	    wall. The floor of the cave entrance is made up of 
+	    roughly piled rocks, rather than the unbroken canyon 
+	    floor.";
+	],
+	e_to [;
+	    if (quartzdoor has locked)
+		"You can't get through here, the entrance is tightly 
+		packed.";
+	    return Cave;
+	],
+	w_to Ropeladder,
+ has 	light;
+
+Object 	-> entrance "cave entrance"
+ with	name 'entrance' 'cave',
+	description
+	    "The cave entrance is blocked by large rocks neatly 
+	    packed together. This must have been artificially done.",
+ has 	scenery;
+
+Object 	-> rocks "rocks"
+ with	name 'rock' 'rocks',
+	description [;
+	    if (quartzdoor has locked)
+		"They're carefully piled in the cave entrance.";
+	    "A rough clutter of rocks on the floor of the cave 
+	    entrance.";
+	],
+	before [;
+	 Take: "The rocks are far too tightly packed for you to move 
+	    them.";
+	],
+ has 	scenery pluralname;
+
+Object 	Obspoint "Observation point"
+ with	description
+	    "This appears to be some sort of observation point, 
+	    judging from the telescope here mounted on a tripod.",
+	n_to ladder,
+	d_to ladder,
+ has 	light;
+
+Object 	-> telescope "telescope"
+ with	name 'telescope' 'metal' 'brass',
+	description [;
+	    print "A small brass telescope firmly fixed onto the 
+		tripod. Looking through it you can see the arches";
+	    if (arches has on)
+		print " glowing brightly";
+	    else
+		print " standing";
+	    " in the distance.";
+	],
+	before [;
+	 Take: "You can't remove it from the tripod.";
+	 Search:
+	    print "Looking through the telescope you can see the 
+		arches";
+	    if (arches has on)
+		print " glowing brightly";
+	    else
+		print " standing";
+	    " in the distance.";
+	],
+ has 	scenery;
+
+Object 	-> tripod "tripod"
+ with	name 'tripod' 'pod' 'stand' 'metal' 'legs',
+	description
+	    "A sturdy metal tripod with the legs sunk well into the 
+	    ground.",
+	before [;
+	 Take: "You can't pull the tripod out of the ground.";
+	],
+ has 	scenery;
+
+Object 	-> -> triplegs "legs"
+ with	name 'legs',
+	description
+	    "They're sunk well into the ground.";
+
+Object 	-> farches "arches"
+ with	name 'arch' 'arches' 'glow',
+	before [;
+	 Examine: <<Search telescope>>;
+	 Search: if (arches has on)
+	     "They glow brightly.";
+	 default: "Might I point out that just because you see them 
+	    in a telescope doesn't mean they're actually in this 
+	    location!";
+	],
+ has 	static concealed;
+
+Object 	-> rucksack	"rucksack"
+ with	name 'bag' 'rucksack' 'case' 'lock' 'leather' 'tiny' 'sack' 'pack' 'backpack',
+	description
+	    "The rucksack is made of black leather and has a tiny 
+	    lock.",
+	with_key silverkey,
+	capacity 20,
+	after [;
+	 Unlock:
+	    remove silverkey;
+	    "The small silver key disappears into the lock, and you 
+	    hear a click.";
+	 Open:
+	    if (player in streambed && stream in streambed){
+		give self ~open;
+		"It's really not wise to open that when your 
+		standing here. Firstly, you'll get the inside wet, 
+		and secondly you'll probably lose your balance and 
+		get knocked over by the stream.";
+	    }
+	],
+ has 	container openable lockable locked clothing;
+
+Object 	-> -> glostick "glowing red stick"
+ with	name 'glowing' 'red' 'stick' 'light',
+	description
+	    "A small red stick which glows. Explorers used red 
+	    because then their eyes would adjust to the light 
+	    quicker than after using other colours.",
+ has 	light;
+
+Canyon Chasmtop "Chasm"
+ with	name 'top',
+	description
+	    "A large chasm blocks your way west here. On the far 
+	    side the canyon continues to the south west. The canyon 
+	    stretches out to the east.",
+	e_to Canyonjunction,
+	w_to [;
+	    if (raft notin self)
+		"You're not capable of jumping ten yards in one go.";
+	    if (player notin raft)
+		<<Enter raft>>;
+	    return Chasmw;
+	],
+	nw_to "There's a big chasm in the way.",
+	sw_to "There's a big chasm in the way.",
+	d_to steelrope,
+ has 	light container;
+
+Object 	-> ironhoop "iron hoop"
+ with	name 'iron' 'hoop',
+	description
+	    "A small iron hoop attached to the ground.",
+	initial
+	    "An iron hoop lies here, attached to the ground.",
+ has 	static;
+
+Object 	-> codelock "code lock"
+ with	name 'lock' 'padlock' 'code',
+	description
+	    "A small code lock with a pattern of stars on. It has a 
+	    liquid crystal LCD display and a numerical keypad input.",
+	initial
+	    "A code lock lies here attaching one end of the steel 
+	    rope to the iron hoop.",
+	opened,
+	stara,
+	starb,
+	starc,
+	stard,
+	codecreate [;
+	    while (self.stara ~= 3 && self.stara ~=6 && self.stara ~=8 && self.starb ~= 3 && self.starb ~=6 && self.starb ~=8 && self.starc ~= 3 && self.starc ~=6 && self.starc ~=8 && self.stard ~= 3 && self.stard ~=6 && self.stard ~=8){
+		self.stara = random(7) + 2;
+		self.starb = random(7) + 2;
+		self.starc = random(7) + 2;
+		self.stard = random(7) + 2;
+		while (self.starb == self.stara)
+		    self.starb = random(7) + 2;
+		while (self.starc == self.starb || self.starc == self.stara)
+		    self.starc = random(7) + 2;
+		while (self.stard == self.starc || self.stard == self.starb || self.stard == self.stara)
+		    self.stard = random(7) + 2;
+	    }
+	],
+	before [starcode;
+	 Take:
+	    if (self has static)
+		"It's fixed to the iron hoop.";
+	 Set: "You'll have to set it to something.";
+	 SetTo: "You can only type in numbers to this code lock.";
+	 SetNum:
+	    starcode = 7*(self.stara+self.starb+self.starc+self.stard-12);
+	    if (second == starcode){
+		give self open;
+		give self ~locked;
+		print "The lock springs open";
+		if (self.opened == true)
+		    ".";
+		self.opened = true;
+		give self ~static;
+		give self moved;
+		" releasing the end of the rope down the chasm.";
+	    }
+	    "Nothing obvious happens.";
+	 Unlock, Open: "You need to type in the code to unlock it.";
+	 Lock: <<Close self>>;
+	],
+	after [;
+	 Close:
+	    give self locked;
+	    "You close the lock with ease.";
+	],
+ has 	static openable locked transparent;
+
+Object 	-> -> starpattern "pattern of stars"
+ with	name 'code' 'pattern' 'star' 'stars' 'of',
+	description [;
+	    print "Patterned on to the lock in no particular order 
+		are ";
+	    self.pluno(codelock.stara);
+	    print "-pointed star, ";
+	    self.pluno(codelock.starb);
+	    print "-pointed star, ";
+	    self.pluno(codelock.starc);
+	    print "-pointed star, and ";
+	    self.pluno(codelock.stard);
+	    print "-pointed star.^";
+	    rtrue;
+	],
+	pluno [n;
+	    switch (n){
+	     3 to 7: print "a ";
+	     8: print "an ";
+	     9: print "a ";
+	    }
+	    print n;
+	];
+
+Object 	-> -> display "LCD"
+ with	name 'LCD' 'liquid' 'crystal' 'display';
+
+Object 	-> -> keypad "numerical keypad"
+ with	name 'numerical' 'number' 'numbers' 'keypad' 'button' 'buttons',
+	description
+	    "A keypad with buttons numbered 0-9.",
+	before [;
+	 Set: <<Set codelock>>;
+	 SetNum: <<SetNum codelock second>>;
+	 SetTo: <<SetTo codelock second>>;
+	];
+
+Object 	steelrope "steel rope"
+ with	name 'steel' 'rope' 'long',
+	initial [;
+	    if (self in Chasmmiddle)
+		rtrue;
+	    print "A rope hangs down the side of the chasm here";
+	    if (codelock.opened)
+		".";
+	    ", loops on itself, and comes back up.";
+	],
+	description [;
+	    print "A long steel rope hanging off the side of the chasm";
+	    if (codelock.opened)
+		".";
+	    " which loops around and is attached again at the top by 
+	    a code lock.";
+	],
+	before [;
+	 Climb: <<Enter self>>;
+	],
+	door_to [;
+	    if (self in Chasmtop){
+		if (codelock.opened){
+		    if (vaultwater in Chasmtop)
+			"There's no way you'll be able to hold your 
+			breath going all the way down there!";
+		    return Chasmbottom;
+		}
+		return Chasmmiddle;
+	    }
+	    return Chasmtop;
+	    
+	],
+	door_dir [;
+	    if (self in Chasmtop){
+		if (codelock.opened)
+		    return d_to;
+		return d_to;
+	    }
+	    return u_to;
+	],
+	found_in Chasmtop Chasmmiddle Chasmbottom,
+ has 	static door open;
+
+Object 	Chasmmiddle "Half way down"
+ with	description
+	    "You get half way down the chasm, until the rope loops 
+	    and goes back up.",
+	before [;
+	 Jump: "Hanging on to a rope half way down a chasm with 
+	    nothing to stand on is hardly the best time to be 
+	    jumping!";
+	],
+	after [;
+	 Drop: move noun to Chasmbottom;
+	],
+	u_to steelrope,
+	d_to
+	    "It's a long way down. If you jump, I'm not going to 
+	    join you... on second thoughts, you'd better not jump 
+	    either. If you're that suicidal, just type ~die~.",
+ has 	light;
+
+Object 	Chasmbottom "Bottom of chasm"
+ with	description
+	    "You are standing in the bottom of a fairly spacious 
+	    deep chasm. A tunnel opens in the south of the chasm.",
+	u_to steelrope,
+	d_to "You Can't go that way.",
+	s_to chasmtunnel,
+	cant_go "The walls here are a bit steep - how about climbing 
+	    up the rope.",
+ has 	light;
+
+Object 	-> raft "large wooden raft"
+ with	name 'raft' 'wooden' 'heavy' 'wooden',
+	description [;
+	    print "A large, heavy wooden raft, ";
+	    if (self in Chasmbottom){
+		print "resting, immovable, on the ";
+		if (self.side == 1)
+		    print "east";
+		else
+		    print "west";
+		"ern side of the chasm.";
+	    }
+	    "A large wooden raft, floating gently on the water.";
+	],
+	initial [;
+	    if (self in Chasmbottom)
+		"A large wooden raft is on the floor of the chasm.";
+	    "A large wooden raft floats on the water.";
+	],
+	before [;
+	 Take: "It's rather too big, heavy, and otherwise 
+	    unportable.";
+	 Push:
+	    if (player in self)
+		"Pushing the raft when you're on it has little 
+		effect: consider (if you understand it) Newton's 
+		third law of motion.";
+	    if (self in Chasmbottom)
+		"It's rather heavy, and won't slide across the 
+		ground - unless you have an elephant handy!";
+	    "I can't imagine it's very wise to push the raft away 
+	    from you...";
+	 PushDir:
+	    if (player in self)
+		"Pushing the raft when you're on it has little 
+		effect: consider (if you understand it) Newton's 
+		third law of motion.";
+	    if (self in Chasmbottom)
+		"It's Rather heavy, and won't slide across the 
+		ground - unless you have an elephant handy!";
+	    "I can't imagine it's very wise to push the raft so it 
+	    floats away...";
+	 Go:
+	    if (self in Chasmtop && noun == w_obj){
+		self.side = 2;
+		return 1;
+	    }
+	    if (self in Chasmw && noun == e_obj){
+		self.side = 1;
+		return 1;
+	    }
+	],
+	after [;
+	 Enter:
+	    if (self in Chasmtop){
+		self.side = 2;
+		print "Your momentum carries you and the raft to the 
+		    other side of the chasm.^";
+		<<Go w_obj>>;
+	    }
+	    if (self in Chasmw){
+		self.side = 1;
+		print "Your momentum carries you and the raft to the 
+		    other side of the chasm.^";
+		<<Go e_obj>>;
+	    }
+	],
+	side 2,
+ has 	static supporter enterable;
+
+Object 	-> silverkey "small silver key"
+ with	name 'small' 'silver' 'key',
+	description
+	    "A very small silver key";
+
+Object 	-> chasmtunnel "tunnel"
+ with	name 'tunnel' 'passage',
+	description
+	    "A smooth tunnel leading south.",
+	door_to Steeltunnel,
+	door_dir s_to,
+ has 	scenery door open;
+
+Object 	chasm "chasm"
+ with	name 'chasm' 'deep' 'wide',
+	description
+	    "A 10-foot wide and very deep chasm.",
+	before [;
+	 Receive:
+	    if (player in Chasmbottom)
+		<<Drop noun>>;
+	    move noun to Chasmbottom;
+	    "You watch ", (the) noun, " fall down to the bottom of 
+		the chasm.";
+	 Enter:
+	    if (player in Chasmtop)
+		"It wouldn't be advisable to jump down there; try 
+		climbing down the rope!";
+	    if (player in Chasmmiddle)
+		"Even from half way down, the drop to the bottom 
+		could well be fatal.";
+	    if (player in Chasmw)
+		"I know the puzzles in this game may seem hard, but 
+		if you commit suicide, there's no way you'll solve 
+		them.";
+	    "You're at the bottom already!!!";
+	],
+	found_in Chasmtop Chasmmiddle Chasmbottom Chasmw,
+ has 	scenery;
+
+Underground Hole "Hole"
+ with	name 'hole',
+	description [;
+	    print "You are at the bottom of a deep hole.";
+	    if (securedoor notin self)
+		"^There is a room to the south.";
+	    rtrue;
+	],
+	u_to Shed,
+	s_to [;
+	    if (securedoor in self)
+		"You can't, since the door is in the way.";
+	    return Workroom;
+	];
+
+Object 	securedoor "door"
+ with	name 'door' 'secure' 'steel' 'workroom' 'word' 'words' 'letter' 'letters',
+	description
+	    "A sturdy steel door with the words ~Secure Workroom~ 
+	    lit up. There is a diagram stuck to it.",
+	initial
+ 			"There is a door to the south marked in 
+	    back-lit letters ~Secure Workroom~. A diagram is stuck to 
+	    it.",
+ has 	static transparent;
+
+Object 	-> diagram "diagram"
+ with	name 'diagram' 'stars' 'star',
+	description
+	    "A diagram showing pictures of:^
+	    A 4-pointed star ~= 7~^
+	    A 5-pointed star ~= 14~^
+	    A 7-pointed star ~= 28~^
+	    A 9-pointed star ~= 42~^^
+	    And, a 4-pointed star and a 5-pointed star, =, a 9-pointed star.",
+	before [;
+	 Take: "It's well and truly stuck to the door.";
+	],
+ has 	static;
+
+Underground Workroom "Secure Workroom"
+ with	name 'room' 'workroom' 'corner',
+	description [;
+	    print "You are in a small bare room with a ";
+	    if (backdoor in self)
+		print "closed door to the north.";
+	    else
+		print "doorway to the north.";
+	    if (dial has on)
+		"^Everything looks plain red in here.";
+	],
+	n_to [;
+	    if (backdoor in self)
+		"The door's closed.";
+	    return Hole;
+	];
+
+Object 	-> lever "lever"
+ with	name 'lever',
+	description [;
+	    print "A lever marked ~open~ and ~closed~ it is 
+		currently set to ";
+	    if (self has on)
+		"~closed~.";
+	    "~open~.";
+	],
+	before [;
+	 Pull:
+	    if (self has on)
+		<<Switchoff self>>;
+	    <<Switchon self>>;
+	],
+	after [;
+	 Switchon:
+	    if (dial hasnt on){
+		move securedoor to Hole;
+		move backdoor to Workroom;
+		remove backdoorway;
+		"The door slides shut.";
+	    }
+	 Switchoff:
+	    remove securedoor;
+	    remove backdoor;
+	    move backdoorway to Workroom;
+	    if (dial hasnt on)
+		"The door slides open.";
+	    rfalse;
+	],
+ has 	switchable static on;
+
+Object 	-> backdoorway "doorway"
+ with	name 'doorway',
+ has 	scenery;
+
+Object 	-> spectrometer "spectrometer"
+ with	name 'spectrometer' 'spec' 'machine' 'letters' 'colourful' 'side' 'white',
+	description
+	    "This spectrometer is a large machine, that looks kind 
+	    of like a photocopier without the lid. You know it's a 
+	    spectrometer, because it says just that: ~SPECTROMETER~ 
+	    in colourful letters on the side.",
+	initial
+	    "A white spectrometer of some kind stands solidly in the 
+	    corner.",
+	capacity 5,
+	after [;
+	 Receive, LetGo:
+	    if (children(self) == 1 && gemstone in self && spectroswitch has on && (waterswitch has on || epowerdial.setting == 3))
+		"The spectrometer flashes orange, indigo, red, blue, 
+		yellow, violet, green.";
+	],
+ has 	static supporter;
+
+Object 	markings "red markings"
+ with	name 'red' 'markings' 'marking' 'asterisk' 'hexagon' 'square',
+	description [r;
+	    give Workroom ~light;
+	    r = OffersLight(Workroom);
+	    give Workroom light;
+	    if (r == 1)
+		"You can't make out any detail in the red light.";
+	    "Amidst the red marks on the walls you can make out:^
+	    A square and ~1~ close together,^
+	    A 5-pointed asterisk and ~98~,^
+	    And a 5-pointed asterisk, a hexagon and ~101~ together.";
+	],
+	before [;
+	 Take: "They don't come easily off the walls.";
+	],
+	initial [r;
+	    give Workroom ~light;
+	    r = OffersLight(Workroom);
+	    give Workroom light;
+	    if (r == 1)
+		"Some red markings are barely visible in the red light";
+	    "On the wall are some red markings.";
+	],
+ has 	static pluralname;
+
+Object 	backdoor "door"
+ with	name 'door' 'steel' 'secure',
+	description
+	    "A sturdy steel door with no obvious means of opening.",
+ has 	scenery;
+
+Underground Steeltunnel "Tunnel"
+ with	description
+	    "Surrounding you are smooth stone walls, forming a long circular tunnel.",
+	n_to Chasmbottom,
+	u_to manhole;
+
+Object 	-> steelpanel "steel plate"
+ with	name 'steel' 'panel' 'round' 'circular' 'plate' 'large' 'metal',
+	description
+	    "A large steel plate filling the tunnel.",
+	initial
+	    "A steel plate fills the tunnel here, blocking your way",
+ has 	static;
+
+Object 	-> manhole "manhole"
+ with	name 'manhole' 'man-hole' 'shaft' 'hole',
+	description [;
+	    print "A shaft leading vertically ";
+	    if (self in Hallway){
+		print "downwards";
+		if (holewater in self)
+		    print ", full of water";
+		".";
+	    }
+	    "upwards.";
+	],
+	initial [;
+	    if (self in Hallway){
+		print "In one corner of the room, a manhole";
+		if (holewater in self)
+		    print ", full of water,";
+		" descends into the darkness.";
+	    }
+	    "Above you a manhole ascends into the distance.";
+	],
+	door_to [;
+	    if (self in Hallway){
+		if (holewater in self)
+		    "I wouldn't risk drowning to go down that dark 
+		    hole.";
+		return Steeltunnel;
+	    }
+	    if (lift in Hallway)
+		"You climb up, bang your head on something, and 
+		climb back down.";
+	    return Hallway;
+	],
+	door_dir [;
+	    if (self in Hallway)
+		return d_to;
+	    return u_to;
+	],
+	found_in Hallway Steeltunnel,
+ has 	static door open transparent;
+
+Object 	-> -> rungs "metal rungs"
+ with	name 'metal' 'rung' 'rungs' 'ladder',
+	description [;
+	    print "Firm metal rungs which lead ";
+	    if (manhole in Steeltunnel)
+		print "up";
+	    else
+		print "down";
+	    " the manhole.";
+	],
+ has 	static pluralname;
+
+Object 	holewater "water"
+ with	name 'water' 'deep',
+	description
+	    "Deep water filling the manhole.",
+	before [;
+	 Take: "Besides the fact you have nothing suitable to carry 
+	    it in, carrying a few tonnes of water around with you is 
+	    rather unnecessary.";
+	];
+
+Array colour --> 0 1 2 3 4 5 6;
+Array colourname --> 'red' 'orange' 'yellow' 'green' 'blue' 'indigo' 'violet';
+Array colourletter --> "ROYGBIV";
+Array spindle --> 7;
+Array numrank --> 'first' 'second' 'third' 'fourth' 'fifth' 'sixth' 'seventh';
+Array doorref --> d0 d1 d2 d3 d4 d5 d6;
+
+Class 	Colourdoor
+ with	short_name [;
+	    if (self in Hallway){
+		print (address) numrank-->self.doorno, " eastern door";
+	    }
+	    else
+		print "door";
+	    rtrue;
+	],
+	name 'door' 'glistening' 'eastern',
+	description [;
+	    print "The ";
+	    self.short_name();
+	    print " is ";
+	    if (self has open)
+		"open.";
+	    "closed.";
+	],
+	before [;
+	 Enter:
+	    if (self in Colourdoorroom)
+		rfalse;
+	    if (self hasnt open)
+		"That door's shut.";
+	    Colourdoorroom.roomno = self.doorno;
+	    PlayerTo(Colourdoorroom);
+	    rtrue;
+	],
+	door_to [;
+	    if (self in Colourdoorroom)
+		return Hallway;
+	],
+	door_dir [;
+	    if (self in Colourdoorroom)
+		return w_to;
+	    return self;
+	],
+ has 	door static concealed;
+
+Object 	Hallway "Majestic hallway"
+ with	name 'wall' 'hallway',
+	description [;
+	    print "You are standing in a majestic hallway";
+	    if (slabbutton hasnt on)
+		print " of extraordinary brilliance";
+	    print ". Seven";
+	    if (slabbutton hasnt on)
+		print " glistening";
+	    print " doors line the eastern wall, on the northern 
+		wall is a solid marble door, on the western wall a 
+		clear crystal arch stands over an entrance, and the 
+		southern wall is filled with a 20ft high";
+	    if (slabbutton hasnt on)
+		print " golden";
+	    print " arch covered with sparkling gems. ";
+	    if (slabbutton hasnt on)
+		"Light streams through the window in the ceiling 
+		onto a 10ft wide chandelier which scatters it in all 
+		different colours.";
+	    "Hanging from the ceiling is a beautiful 10ft wide 
+	    chandelier.";
+	],
+	n_to marbledoor,
+	e_to [;
+	    "You'll have to say which of the doors to enter.";
+	],
+	s_to goldarch,
+	w_to crystalarch,
+	u_to [;
+	    if (lift notin self)
+		"You can't go that way.";
+	    if (player in lift){
+		if (liftbutton has on)
+		    return Colourroom;
+		if (liftbutton.used == 1)
+		    <<Push liftbutton>>;
+		rfalse;
+	    }
+	    if (liftbutton.used == 1){
+		print "You enter the lift...";
+		<Enter lift>;
+		print "^...and push the button.^^";
+		<<Push liftbutton>>;
+	    }
+	],
+	d_to [;
+	    if (manhole in self)
+		return manhole;
+	],
+ has 	light;
+
+Object 	-> hallwindow "6ft window"
+ with	name 'window' 'glass' 'big' 'pane' '6ft',
+	description [;
+	    print "A ";
+	    if (slabbutton hasnt on)
+		print "clear, ";
+	    "6ft square pane of glass in the ceiling above you.";
+	],
+	before [;
+	 Search:
+	    if (slabbutton hasnt on)
+		"Above the window is clear blue sky.";
+	    "Above the window is blackness.";
+	],
+ has 	scenery;
+
+Object 	-> marbledoor "marble door"
+ with	name 'marble' 'door' 'solid' 'slab' 'grey',
+	description
+	    "It's really just a solid slab of grey marble without 
+	    any adornment.",
+	before [;
+	 Push: <<Open self>>;
+	],
+	after [;
+	 Open:
+	    give self ~openable;
+	    "You push the door, which swings smoothly open into the 
+	    passageway beyond.";
+	],
+	door_to Marblepassage,
+	door_dir n_to,
+ has 	scenery door openable;
+
+Object 	-> crystalarch "crystal arch"
+ with	name 'arch' 'crystal' 'clear' 'entrance',
+	description
+	    "A clear crystal arch standing over an entrance to the 
+	    west.",
+	door_to Mountainarch,
+	door_dir w_to,
+ has 	scenery door open;
+
+Object 	-> goldarch "golden arch"
+ with	name 'golden' 'gold' 'arch' 'archway',
+	description [;
+	    print "A 20ft high golden arch covered in sparkling 
+		gems, filling the southern wall of the hallway";
+	    if (goldshimmer in Hallway){
+		if (self.shimmerfrom == 1)
+		    print ". Shimmering light floods from within";
+		else
+		    print ". A vague shimmer of light emanates from 
+			within";
+	    }
+	    ".";
+	],
+	shimmerfrom,
+	door_to [;
+	    if (goldshimmer in hallway){
+		if (self.shimmerfrom == 1){
+		    deadflag = 2;
+		    "You walk into the light, and find yourself 
+		    whizzing past indescribable sights and sounds. 
+		    Some, you can even make out what they say, in 
+		    little penguin-like voices. ~It's not over... 
+		    ...I'll be back... ...you still haven't won... 
+		    ...but for now...~ and finally you hear no more.";
+		}
+		"You walk dazedly into the light... and bang your 
+		head on the wall.";
+	    }
+	    "That big solid thing behind the arch - we call that a 
+	    wall.";
+	],
+	door_dir s_to,
+ has 	scenery door open transparent;
+
+Object 	-> -> archgems	"sparkling gems"
+ with	name 'gems' 'gem' 'sparkling',
+	description [;
+	    if (slabbutton hasnt on)
+		"They sparkle.";
+	    else
+		"You see nothing special about the sparkling gems.";
+	];
+
+Colourdoor -> d6
+ with	name 'seventh',
+	doorno 6;
+
+Colourdoor -> d5
+ with	name 'sixth',
+	doorno 5;
+
+Colourdoor -> d4
+ with	name 'fifth',
+	doorno 4;
+
+Colourdoor -> d3
+ with	name 'fourth',
+	doorno 3;
+
+Colourdoor -> d2
+ with	name 'third',
+	doorno 2;
+
+Colourdoor -> d1
+ with	name 'second',
+	doorno 1;
+
+Colourdoor -> d0
+ with	name 'first',
+	doorno;
+
+Object 	colourdoors "eastern doors"
+ with	name 'eastern' 'doors' 'glistening',
+	description [n;
+	    if (self in Hallway)
+		print "Seven glistening doors lining the eastern 
+		    wall, which, for convenience, we shall refer to 
+		    as the first, second... and seventh (eastern 
+		    door).";
+	    else
+		print "Seven glistening doors lining the eastern 
+		    wall of the hallway.";
+	    for (n=0:n<6:n++){
+		print "^The ", (address) numrank-->n, " door is ";
+		if (doorref-->n has open)
+		    print "open";
+		else
+		    print "closed";
+		print ";";
+	    }
+	    print "^And the seventh door is ";
+	    if (d6 has open)
+		print "open";
+	    else
+		print "closed";
+	    ".";
+	],
+	before [;
+	 Enter:
+	    if (self in Colourroom)
+		"You can't reach them.";
+	    "You'll have to specify which one.";
+	 Examine:
+	    rfalse;
+	 default:
+	    if (self in Colourroom)
+		"You can't reach them.";
+	    rfalse;
+	],
+	found_in Hallway Colourroom,
+ has 	scenery pluralname;
+
+Object 	chandelier "chandelier"
+ with	name '10ft' 'chandelier',
+	description [;
+	    print "A beautiful 10ft wide chandelier";
+	    if (slabbutton hasnt on)
+		", which scatters the light from the window above in 
+		all different colours.";
+	    ".";
+	],
+	before [;
+	 Examine: rfalse;
+	 default: "You can't reach it.";
+	],
+	found_in Hallway Colourroom,
+ has 	scenery;
+
+Object 	goldshimmer "shimmering light"
+ with	name 'shimmer' 'shimmering' 'light',
+	description [;
+	    if (goldarch.shimmerfrom == 1)
+		"The wonderful light comes from behind the golden 
+		arch, as if a long tunnel extended back into the sun 
+		behind... well no, okay, that's rather unlikely, but 
+		it's the impression you get anyway.";
+	    "The light flickers between the arch, almost tempting 
+	    you to believe there's something behind there.";
+	],
+	initial [;
+	    if (goldarch.shimmerfrom == 1)
+		"Between the golden arch, from somewhere behind it, 
+		floods bright light.";
+	    "Between the golden arch is shimmering light, almost 
+	    obscuring the wall behind.";
+	],
+ has 	static;
+
+Underground Marblepassage "Marble passage"
+ with	name 'passage' 'passageway',
+	description [;
+	    print "The solid marble of the passage around you ends 
+		abruptly ";
+	    if (quartzdoor has locked)
+		print "at a quartz door to the east.";
+	    else
+		print "where a pile of rubble blocks your way.";
+	    " The passage returns to the SW.";
+	],
+	e_to [;
+	    if (quartzdoor has locked)
+		return quartzdoor;
+	],
+	sw_to Hallway;
+
+Object 	-> quartzdoor "quartz door"
+ with	name 'quartz' 'door' 'bare' 'solid',
+	description
+	    "The door is bare, save for a keyhole. Looking 
+	    carefully, you can see the door slants very slightly.",
+	after [;
+	 Unlock:
+	    move rubble to location;
+	    remove self;
+	    "As you fumble with the key, the ground begins to shake 
+	    beneath you, and the door begins to crack. You are just 
+	    quick enough to extract the key from the lock before the 
+	    door crumbles under the weight of a huge pile of rocks.";
+	],
+	with_key shedkey,
+ has 	scenery door openable lockable locked transparent;
+
+Object 	-> -> quartzhole "keyhole"
+ with	name 'keyhole',
+	before [;
+	 Receive:
+	    <<Unlock quartzdoor noun>>;
+	];
+
+Object 	Colourdoorroom
+ with	short_name [;
+	    switch(self.roomno){
+	     0:	print "First";
+	     1:	print "Second";
+	     2:	print "Third";
+	     3:	print "Fourth";
+	     4:	print "Fifth";
+	     5:	print "Sixth";
+	     6:	print "Seventh";
+	    }
+	    print " light room";
+	    rtrue;
+	],
+	description
+	    "You are in a small room, opening out onto the hallway.",
+	w_to [;
+	    if (doorref-->(self.roomno) hasnt open)
+		"The door's in the way.";
+	    return Hallway;
+	],
+	roomno,
+ has 	light;
+
+Object 	-> colourspindle "colour spindle"
+ with	name 'colour' 'spindle' 'spindly' 'device' 'rod',
+	description [c i;
+	    print "Seven spokes protrude from a small circular 
+		centre which is attached so it can rotate freely. 
+		Each spoke has a circle on the end, larger in 
+		diameter than the spoke, which is coloured. Going 
+		clockwise from the top, the colours are ";
+	    i = spindle-->(Colourdoorroom.roomno);
+	    for (c=0:c<6:c++){
+		print (address) colourname-->i, ", ";
+		if (i == 6)
+		    i = 0;
+		else
+		    i++;
+	    }
+	    "and ", (address) colourname-->i, ".";
+	],
+	initial
+	    "A spindly device, with seven arms and on the end of 
+	    each a coloured circle, stands about 4ft off the ground, 
+	    on a long rod.",
+	before [r closed;
+	 Turn: "You'll need to specify clockwise (right) or 
+	    anti-clockwise (left)";
+	 TurnRight:
+	    r = Colourdoorroom.roomno;
+	    if (spindle-->r == 0)
+		spindle-->r = 6;
+	    else
+		(spindle-->r)--;
+	    print "You rotate the spindle clockwise";
+	    if (doorref-->r hasnt open)
+		closed = 1;
+	    colourcontrol.changedoors();
+	    if (closed == 0 && doorref-->r hasnt open)
+		", and the door slides shut.";
+	    if (closed == 1 && doorref-->r has open)
+		", and the door slides open.";
+	    ".";
+	 TurnLeft:
+	    r = Colourdoorroom.roomno;
+	    if (spindle-->r == 6)
+		spindle-->r = 0;
+	    else
+		(spindle-->r)++;
+	    print "You rotate the spindle anti-clockwise";
+	    if (doorref-->r hasnt open)
+		closed = 1;
+	    colourcontrol.changedoors();
+	    if (closed == 0 && doorref-->r hasnt open)
+		", and the door slides shut.";
+	    if (closed == 1 && doorref-->r has open)
+		", and the door slides open.";
+	    ".";
+	],
+ has 	static;
+
+Object 	-> lightray "ray of light"
+ with	name 'ray' 'of' 'light',
+	description [;
+	    "A ray of ", (address)
+ 		colourname-->(colour-->(Colourdoorroom.roomno)),
+     		    " light, shining on the top circle of the colour 
+		    spindle.";
+	],
+	initial [;
+	    "A ray of ", (address)
+ 		colourname-->(colour-->(Colourdoorroom.roomno)),
+     		    " light shines on the top circle of the colour 
+		    spindle.";
+	],
+ has 	static;
+
+Object 	rubble "rubble"
+ with	name 'rubble' 'rocks' 'rock' 'pile',
+	description
+	    "The mess in front of you is made up of a mix of marble 
+	    from the passageway and rock.",
+ has 	scenery;
+
+Object 	Cave "Cave"
+ with	name 'cave',
+	description
+	    "You are in a large cave, with a hole the northernmost 
+	    point, and one at the southern most point. Light fills 
+	    the cave from the entrance to the west.",
+	n_to northhole,
+	w_to Caveentrance,
+	s_to southhole,
+ has 	light;
+
+Object 	-> undergroundstream "underground stream"
+ with	name 'underground' 'stream' 'water' 'clear' 'sparkling' 'large',
+	description
+	    "Clear sparkling water rushing through the cave.",
+	initial
+	    "A large underground stream flows into the cave from the 
+	    southern hole, and out by the northern hole.",
+ has 	static;
+
+Object 	-> northhole "northern hole"
+ with	name 'north' 'northern' 'hole',
+	description [;
+	    print "A large hole";
+	    if (undergroundstream in location)
+		" with water gushing from it.";
+	    ", big enough for a person to fit inside.";
+	],
+	door_to [;
+	    if (undergroundstream in location)
+		"You can't fit in that along with all that water!";
+	    if (HasLightSource(player) || OffersLight(Codetunnel))
+		return Codetunnel;
+	    print "^You feel your way through the darkness until it 
+		becomes bright enough to see again.^";
+	    return Gearroom;
+	],
+	door_dir n_to,
+ has 	scenery door open;
+
+Object 	-> southhole "southern hole"
+ with	name 'south' 'southern' 'hole',
+	description [;
+	    print "A large hole";
+	    if (undergroundstream in location)
+		" with water gushing into it.";
+	    ", big enough for a person to fit inside.";
+	],
+	door_to [;
+	    if (undergroundstream in location)
+		"You can't fit in that along with all that water!";
+	    return Cavetunnel;
+	],
+	door_dir s_to,
+ has 	scenery door open;
+
+Underground Cavetunnel "Tunnel"
+ with	name 'tunnel',
+	description
+	    "You are in a small stone tunnel running n/s.",
+	n_to Cave,
+	s_to "No matter how hard you will it to move, the triangular 
+	    wooden panel stays lodged perfectly in the tunnel.";
+
+Object 	-> cavepanel "wooden panel"
+ with	name 'large' 'wooden' 'panel' 'wood',
+	description
+	    "A wooden panel which fills the now triangular tunnel.",
+	initial
+	    "A wooden panel fills the tunnel and blocks your way.",
+ has 	static;
+
+Underground Gearroom "Tunnel"
+ with	description
+	    "You are in a small stone tunnel running n/s. Light 
+	    filters in through the machinery which blocks the 
+	    passage north.",
+	s_to [;
+	    if(HasLightSource(player) || OffersLight(Codetunnel))
+		return Codetunnel;
+	    print "^You feel your way through the darkness until you 
+		reach the...^";
+	    return Cave;
+	],
+ has 	light;
+
+Object 	-> machinery "machinery"
+ with	name 'gear' 'gears' 'machinery',
+	description
+	    "An assortment of gears and other things, clearly driven 
+	    by the flowing water.",
+ has 	scenery;
+
+Underground Codetunnel "Code door"
+ with	name 'opening' 'tunnel',
+	description [;
+	    print "You are in a small stone tunnel running n/s";
+	    if (codedoor notin self)
+		print ". through an opening in the eastern side of 
+		    the tunnel is another tunnel, parallel to this 
+		    one";
+	    ".";
+	],
+	n_to Gearroom,
+	e_to [;
+	    if (codedoor in self)
+		"You can't go that way.";
+	    return Easttunnel;
+	],
+	s_to Cave;
+
+Object 	-> codedoor "code door"
+ with	name 'code' 'door' 'stone' 'grey',
+	description [;
+	    print "The grey stone code door is marked with ";
+	    self.polytype(self.polygon);
+	    print ", ";
+	    starpattern.pluno(self.star);
+	    print " pointed star and ";
+	    starpattern.pluno(self.asterisk);
+	    print " pointed asterisk.";
+	    rtrue;
+	],
+	initial
+	    "On the eastern wall you can see some sort of code door.",
+	codecreate [;
+	    self.polygon = random(7) + 2;
+	    self.star = random(7) + 2;
+	    self.asterisk = random(7) + 2;
+	],
+	before [code;
+	 Set: "You'll have to set it to something.";
+	 SetTo: "Only numbers will work on this door.";
+	 SetNum:
+	    code = self.polygon + self.star * 7 + self.asterisk * 49 - 171;
+	    if (second == code){
+		remove self;
+		"The door slides backwards and then into the wall, 
+		revealing a parallel passage beyond to the east.";
+	    }
+	    "Nothing obvious happens.";
+	],
+	polygon,
+	star,
+	asterisk,
+	polytype [n;
+	    switch (n){
+	     3: print "a triangle";
+	     4: print "a square";
+	     5: print "a pentagon";
+	     6: print "a hexagon";
+	     7: print "a heptagon";
+	     8: print "an octagon";
+	     9: print "a nonagon";
+	    }
+	],
+ has 	static;
+
+Underground Easttunnel "Eastern tunnel"
+ with	name 'tunnel',
+	description [;
+	    print "This is the tunnel running parallel to the n/s 
+		tunnel which leads from the cave";
+	    if (waterswitch has on)
+		". You can hear rushing water nearby";
+	    if (codedoor notin Codetunnel)
+		". A parallel tunnel lies to the west";
+	    ".";
+	],
+	n_to [;
+	    "Going along the tunnel you soon discover it ends, so 
+	    you turn back.";
+	],
+	w_to [;
+	    if (codedoor in Codetunnel)
+		"You can't go that way.";
+	    return Codetunnel;
+	],
+	s_to [;
+	    PlayerTo(rockclump);
+	    rtrue;
+	];
+
+Object 	Mountainside "Mountainside"
+ with	name 'mountainside' 'sea' 'view' 'mountain',
+	description
+	    "A stunning view lies before you. The mountain stretches 
+	    up to the south, and slopes away into the sea to the 
+	    north. A path here leads west along the mountainside.",
+	w_to Mountaindoor,
+	d_to rockhole,
+ has 	light;
+
+Object 	-> rockclump "clump of rocks"
+ with	name 'clump' 'of' 'rocks' 'rock' 'rocky' 'rockish',
+	description
+	    "They're made of rocky-coloured rocks in a rockish sort 
+	    of formation, sitting on the ground looking remarkably 
+	    like a clump of rocks.",
+	initial
+	    "On the mountainside are a clump of rocks.",
+	inside_description
+	    "You are standing in the midst of a clump of rocks.",
+	before [;
+	 Go:
+	    if(noun == d_obj){
+		PlayerTo(Easttunnel);
+		return 3;
+	    }
+	],
+	d_to rockhole,
+ has 	static enterable container pluralname open;
+
+Object 	-> -> rockhole "hole"
+ with	name 'hole',
+	description
+	    "The hole slopes steeply into the darkness underground.",
+	initial
+	    "In between the rocks is a hole.",
+	before [;
+	 Enter: <<Go d_obj>>;
+	],
+	door_to Easttunnel,
+	door_dir d_to,
+ has 	static door open;
+
+Object 	Mountaindoor "Door in the mountainside"
+ with	name 'mountainside' 'sea' 'mountain' 'view' 'sunlight',
+	description
+	    "The stunning view of the northern part of the island 
+	    lies before you glistening in the sunlight, and the 
+	    mountain towers above to the south.",
+	e_to Mountainside,
+	se_to [;
+	    if (mountainpassage in self && topslider.setting == 0)
+		return mountainpassage;
+	],
+	s_to [;
+	    if (slidedoor in self)
+		"The door's in the way.";
+	],
+	sw_to [;
+	    if (mountainpassage in self && topslider.setting == 9)
+		return mountainpassage;
+	],
+ has 	light;
+
+Object 	-> mountainwindow "glass window"
+ with	name 'window' 'glass' 'big' 'pane',
+	description
+	    "A clear, 6ft square pane of glass, resting in the 
+	    ground beneath you.",
+	initial
+	    "A large window rests in the ground; beneath it is some 
+	    sort of large room.",
+	before [;
+	 Search:
+	    "Through the window you can see a large hallway, 
+	    although not much detail is clear.";
+	],
+ has 	static;
+
+Object 	-> drawdoor "stone slab"
+ with	name 'stone' 'slab' 'square',
+	description [;
+	    print "A 7ft square slab of stone ";
+	    if (slabbutton hasnt on)
+		"vertically against the mountainside. About a foot 
+		from the top a button pokes out of the stone.";
+	    "on the ground. Two chains run from the mountain, one to 
+	    each corner of the rock furthest from the mountain.";
+	],
+	initial [;
+	    print "A 7ft square slab of stone ";
+	    if (slabbutton hasnt on)
+		"perches against the mountainside. A button pokes 
+		out near the top.";
+	    "lies on the ground with two chains running taut from it 
+	    to the mountain.";
+	],
+ has 	static transparent;
+
+Object 	-> -> slabbutton "button"
+ with	name 'button',
+	description
+	    "A cylindrical button, emanating from the face of the 
+	    stone slab.",
+	before [;
+	 Push, Set, SwitchOn, SwitchOff:
+	    give stonelever on;
+	    stonelever.turnon(true);
+	    print "You push the button in, and move out the way as 
+		the massive stone square lowers itself on two 
+		chains, and comes to rest above the window. You can 
+		now see a door";
+	    if (mountainpassage in Mountaindoor)
+		print "way";
+	    print " and two sliders: one above the door";
+	    if (mountainpassage in Mountaindoor)
+		print "way";
+	    " and one below.";
+	],
+ has 	static;
+
+Object 	slabchains "chains"
+ with	name 'chains' 'chain' 'metal',
+	description
+	    "Two chains connecting the far end of the slab of rock 
+	    to the mountainside.",
+ has 	scenery pluralname;
+
+Object 	slidedoor "stone door"
+ with	name 'stone' 'door' 'plain',
+	description
+	    "A plain stone door, resting in the mountainside.",
+	initial
+	    "A plain stone door rests in the mountainside.",
+ has 	static;
+
+Object 	topslider "top slider"
+ with	name 'top' 'slider',
+	description [;
+	    "A slider with 10 settings, numbered from 0-9 from left 
+	    to right. It is currently set to ", self.setting, ".";
+	],
+	initial [;
+	    print "Immediately above the door";
+	    if (slidedoor notin Mountaindoor)
+		print "way";
+	    " is a slider.";
+	],
+	setting,
+	before [;
+	 SetNum:
+	    if (second > 9)
+		"You can only set the slider from 0-9.";
+	    if (second == self.setting)
+		"It's already set to that.";
+	    self.setting = second;
+	    print "You set the slider to ", second, ".^";
+	    if (self.setting == 0 && bottomslider.setting == 9){
+		remove slidedoor;
+		move mountainpassage to Mountaindoor;
+		"The door swings to the right into the mountain, 
+		revealing a passage to the south-east.";
+	    }
+	    if (self.setting == 9 && bottomslider.setting == 0){
+		remove slidedoor;
+		move mountainpassage to Mountaindoor;
+		"The door swings to the left into the mountain, 
+		revealing a passage to the south-west.";
+	    }
+	    if (mountainpassage in Mountaindoor){
+		remove mountainpassage;
+		move slidedoor to Mountaindoor;
+		"The door swings back into place.";
+	    }
+	    rtrue;
+	 Set, SetTo:
+	    "You can only set that to numbers from 0 to 9";
+	],
+ has 	static;
+
+Object 	bottomslider "bottom slider"
+ with	name 'bottom' 'slider',
+	description [;
+	    "A slider with 10 settings, numbered from 0-9 from right 
+	    to left. It is currently set to ", self.setting, ".";
+	],
+	initial [;
+	    print "Immediately below the door";
+	    if (slidedoor notin Mountaindoor)
+		print "way";
+	    " is a slider.";
+	],
+	setting,
+	before [;
+	 SetNum:
+	    if (second > 9)
+		"You can only set the slider from 0-9.";
+	    if (second == self.setting)
+		"It's already set to that.";
+	    self.setting = second;
+	    print "You set the slider to ", second, ".^";
+	    if (self.setting == 9 && topslider.setting == 0){
+		remove slidedoor;
+		move mountainpassage to Mountaindoor;
+		"The door swings to the right into the mountain, 
+		revealing a passage to the south-east.";
+	    }
+	    if (self.setting == 0 && topslider.setting == 9){
+		remove slidedoor;
+		move mountainpassage to Mountaindoor;
+		"The door swings to the left into the mountain, 
+		revealing a passage to the south-west.";
+	    }
+	    if (mountainpassage in Mountaindoor){
+		remove mountainpassage;
+		move slidedoor to Mountaindoor;
+		"The door swings back into place.";
+	    }
+	    rtrue;
+	 Set, SetTo:
+	    "You can only set that to numbers from 0 to 9";
+	],
+ has 	static;
+
+Object 	mountainpassage "passage"
+ with	name 'passage' 'doorway',
+	description [;
+	    print "The passage leads off to the ";
+	    if (topslider.setting == 0)
+		"south-east.";
+	    "south-west.";
+	],
+	initial [;
+	    print "Through a doorway a passage leads off to the ";
+	    if (topslider.setting == 0)
+		"south-east.";
+	    "south-west.";
+	],
+	door_to [;
+	    if (topslider.setting == 0)
+		return Controlroom;
+	    return Vault;
+	],
+	door_dir [;
+	    if (topslider.setting == 0)
+		return se_to;
+	    return sw_to;
+	],
+ has 	static door open;
+
+Object 	Passageend "Dead end"
+ with	description [;
+	    print "The passage out of the mountain has now been shut 
+		off by some means. You'll have to go back south-";
+	    if (self.back == 0)
+		"east.";
+	    "west.";
+	],
+	back,
+	se_to [;
+	    if (self.back == 0)
+		return Controlroom;
+	],
+	sw_to [;
+	    if (self.back == 1)
+		return Vault;
+	];
+
+Class 	Ctrlswitch
+ with	before [;
+	 Take: "That's fixed in place.";
+	 Set:
+	    if (self has on)
+		<<SwitchOff self>>;
+	    <<SwitchOn self>>;
+	 Pull: <<Set self>>;
+	],
+	after [;
+	 SwitchOn:
+	    if (epowerdial.setting == self.epset || waterswitch has on){
+		if (self.turnon() == true)
+		    rtrue;
+	    }
+	 SwitchOff:
+	    if (epowerdial.setting == self.epset || waterswitch has on){
+		if (self.turnoff() == true)
+		    rtrue;
+	    }
+	],
+ has 	switchable;
+
+Object 	Controlroom "Control room"
+ with	description [;
+	    print "A room filled with levers, buttons, switches - 
+		how wonderful, all these things to fiddle with. But 
+		what do they do...?^ A large ventilation duct twists 
+		across the ceiling; from it comes ";
+	    if (fanswitch has on)
+		print "a faint buzz and ";
+	    "a string with a handle on the end. A flight of steps 
+	    lead down to the north-west.";
+	],
+	nw_to steps,
+	d_to steps,
+ has 	light;
+
+Object 	-> controls "controls"
+ with	name 'controls' 'switches' 'levers' 'buttons' 'control',
+	description [;
+	    print "Amongst the arrays of controls are a few which are 
+		labelled: One lever, marked ~stone door~ (currently ";
+	    if (stonelever has on)
+		print "on";
+	    else
+		print "off";
+	    if (epowerdial.setting == 1 || waterswitch has on)
+		print " and lit up";
+	    print ");^Another lever labelled ~vault~ at the 'off' 
+		position, and ~chasm~ at the 'on' (currently set to ";
+	    if (waterlever has on)
+		print "chasm";
+	    else
+		print "vault";
+	    if (epowerdial.setting == 2 || waterswitch has on)
+		print " and lit up";
+	    print ");^A switch labelled ~spectrometer~ (currently ";
+	    if (spectroswitch has on)
+		print "on";
+	    else
+		print "off";
+	    if (epowerdial.setting == 3 || waterswitch has on)
+		print " and lit up";
+	    print ");^A button labelled ~tunnel door~ (lit ";
+	    if (codedoor in Codetunnel)
+		print "red";
+	    else
+		print "green";
+	    print ");^Another button labelled ~colour doors~";
+	    if (waterswitch has on || epowerdial.setting == 3){
+		print " (lit ";
+		if (self has on)
+		    print "green)";
+		else
+		    print "red)";
+	    }
+	    print ";^And finally a button labelled ~lift call~";
+	    if (epowerdial.setting == 2 || waterswitch has on){
+		print " (currently lit ";
+		if (lift in Colourroom)
+		    print "green)";
+		else
+		    print "red)";
+	    }
+	    ".^^ Above all these is a dial labelled ~emergency 
+	    power~, which can be set from 1-3, and is currently set 
+	    to ", epowerdial.setting, ".";
+	],
+	initial
+	    "A few of the controls are labelled",
+ has 	static transparent pluralname;
+
+Ctrlswitch -> -> stonelever "stone door lever"
+ with	name 'stone' 'door' 'lever',
+	description [;
+	    print "A fairly ordinary lever, marked stone door. It is 
+		currently ";
+	    if (self has on)
+		print "on";
+	    else
+		print "off";
+	    if (epowerdial.setting == 1 || waterswitch has on)
+		print ", and is lit up";
+	    ".";
+	],
+	before [;
+	 Pull:
+	    if (self has on)
+		<<SwitchOff self>>;
+	    <<SwitchOn self>>;
+	],
+	epset 1,
+	turnon [silence;
+	    give slabbutton on;
+	    give drawdoor ~transparent;
+	    move slabchains to Mountaindoor;
+	    move topslider to Mountaindoor;
+	    move bottomslider to Mountaindoor;
+	    if (topslider.setting == 9 && bottomslider.setting == 0)
+		move mountainpassage to Mountaindoor;
+	    else if (topslider.setting == 0 && bottomslider.setting == 9)
+		move mountainpassage to Mountaindoor;
+	    else
+		move slidedoor to Mountaindoor;
+	    remove mountainwindow;
+	    give Hallway ~light;
+	    give Colourroom ~light;
+	    colourcontrol.changedoors();
+	    if (silence ~= true)
+		"You switch the stone door lever on.^
+		There is a low grinding sound in the distance.";
+	],
+	turnoff [silence;
+	    give Colourroom light;
+	    give Hallway light;
+	    move mountainwindow to Mountaindoor;
+	    remove slidedoor;
+	    remove mountainpassage;
+	    remove bottomslider;
+	    remove topslider;
+	    remove slabchains;
+	    give drawdoor transparent;
+	    give slabbutton ~on;
+	    if (colourdoorbutton has on){
+		colourcontrol.changedoors();
+	    }
+	    if (silence ~= true)
+		"You switch the stone door lever off.^
+		There is a low grinding sound in the distance.";
+	];
+
+Ctrlswitch -> -> waterlever "vault to chasm lever"
+ with	name 'vault' 'to' 'chasm' 'lever',
+	description [;
+	    print "The lever is marked ~vault~ at the 'off' 
+		position, and ~chasm~ at the 'on' position. It is 
+		currently at ";
+	    if (self has on)
+		print "vault";
+	    else
+		print "chasm";
+	    if (epowerdial.setting == 2 || waterswitch has on)
+		print ", and it is lit up";
+	    ".";
+	],
+	before [;
+	 Pull:
+	    if (self has on)
+		<<SwitchOff self>>;
+	    <<SwitchOn self>>;
+	],
+	epset 2,
+	turnon [;
+	    remove vaultwater;
+	    give vaultwater ~absent;
+	    give vaultwater ~scenery;
+	    move holewater to manhole;
+	    if (raft.side == 1)
+		move raft to Chasmtop;
+	    else
+		move raft to Chasmw;
+	    move codedoor to Codetunnel;
+	    rfalse;
+	],
+	turnoff [;
+	    move raft to Chasmbottom;
+	    remove holewater;
+	    give vaultwater scenery;
+	    give vaultwater absent;
+	    move vaultwater to vault;
+	    rfalse;
+	];
+
+Object 	-> -> spectroswitch "spectrometer switch"
+ with	name 'spectrometer' 'spec' 'switch',
+	description [;
+	    print "A switch labelled spectrometer, currently ";
+	    if (self has on)
+		print "on";
+	    else
+		print "off";
+	    if (epowerdial.setting == 3 || waterswitch has on)
+		print " and lit up";
+	    ".";
+	],
+	before [;
+	 Take: "That's fixed in place.";
+	 Set:
+	    if (self has on)
+		<<SwitchOff self>>;
+	    <<SwitchOn self>>;
+	],
+ has 	switchable;
+
+Object 	-> -> codedbutton "tunnel door button"
+ with	name 'tunnel' 'door' 'button',
+	description [;
+	    print "The button marked ~tunnel door~ is currently lit ";
+	    if (codedoor in Codetunnel)
+		"red.";
+	    "green.";
+	],
+	before [;
+	 SwitchOn, SwitchOff, Push:
+	    if (epowerdial.setting == 1 || waterswitch has on){
+		if (codedoor in codetunnel){
+		    if (vaultwater notin Vault || waterswitch has on)
+			"A beep is heard, but nothing else happens.";
+		    remove codedoor;
+		    "The tunnel door button changes from red to 
+		    green.";
+		}
+		move codedoor to Codetunnel;
+		"The tunnel door button changes from green to red.";
+	    }
+	    "Nothing obvious happens.";
+	];
+
+Object 	-> -> colourdoorbutton "'colour doors' button"
+ with	name 'colour' 'door' 'button' 'doors',
+	description [;
+	    print "The 'colour doors' button ";
+	    if (epowerdial.setting ~= 3 && waterswitch hasnt on)
+		"does not seem amazingly interesting.";
+	    print "is lit ";
+	    if (self has on)
+		"green.";
+	    "red.";
+	],
+	before [;
+	 SwitchOn, SwitchOff:
+	    if (epowerdial.setting ~=3 && waterswitch hasnt on)
+		"Nothing obvious happens when you depress the 
+		button.";
+	    rfalse;
+	 Push:
+	    if (self has on)
+		<<SwitchOff self>>;
+	    <<SwitchOn self>>;
+	],
+	after [;
+	 SwitchOn:
+	    colourcontrol.changedoors();
+	    "The button turns green.";
+	 SwitchOff:
+	    colourcontrol.changedoors();
+	    "The button turns red.";
+	],
+ has 	switchable;
+
+Object 	-> -> liftcall "'lift call' button"
+ with	name 'lift' 'call' 'button',
+	description [;
+	    print "A button, labelled ~lift call~";
+	    if (waterswitch has on || epowerdial.setting == 2){
+		print ", which is lit ";
+		if (lift in Colourroom)
+		    "green.";
+		"red.";
+	    }
+	    ".";
+	],
+	before [;
+	 Push, Set:
+	    if (waterswitch hasnt on && epowerdial.setting ~= 2)
+		"Nothing obvious happens.";
+	    if (lift in Colourroom)
+		"Nothing obvious happens.";
+	    move lift to Colourroom;
+	    give manhole ~absent;
+	    "The button changes colour to green.";
+	];
+
+Object 	-> -> epowerdial "emergency power dial"
+ with	name 'emergency' 'power' 'dial',
+	description [;
+	    "The dial is labelled ~emergency power~, and can be set 
+	    to 1, 2 or 3. It is currently set to ", self.setting, ".";
+	],
+	setting 1,
+	before [wasset nowset;
+	 Set: "You'll have to specify which number to set it to.";
+	 SetTo: "That can only be set to integer numbers from 1-3.";
+	 SetNum:
+	    if (second == 0 || second > 3)
+		"That can only be set from 1-3.";
+	    if (second == self.setting)
+		"It's already set to that.";
+	    wasset = self.setting;
+	    nowset = second;
+	    self.setting = nowset;
+	    if (waterswitch has on)
+		"You set the emergency power dial to ", second, ".";
+	    if (wasset == 3){
+		give colourdoorbutton ~on;
+		colourcontrol.changedoors();
+	    }
+	    if (nowset == 1){
+		if (stonelever has on && slabbutton hasnt on)
+		    stonelever.turnon();
+		if (stonelever hasnt on && slabbutton has on)
+		    stonelever.turnoff();
+	    }
+	    if (nowset == 2){
+		if (waterlever has on && vaultwater in vault)
+		    waterlever.turnon();
+		if (waterlever hasnt on && vaultwater notin vault)
+		    waterlever.turnoff();
+	    }
+	    "You set the emergency power dial to ", nowset, ", and 
+		some of the lights on the controls change.";
+	];
+
+Object 	-> pipe "ventilation duct"
+ with	name 'pipe' 'ventilation' 'large' 'duct' 'vent',
+	description
+	    "A large ventilation pipe twisting across the ceiling, 
+	    exiting the room at the west.",
+	inside_description
+	    "You are in a long pipe, closed to the east, and leading 
+	    off to the west.",
+	before [;
+	 Open:
+	    if (self hasnt openable)
+		"No matter how hard you claw at the lining of the 
+		pipe, it doesn't open.";
+	    if (player in self)
+		<<Open pipehatch>>;
+	    <<Open ventilationhatch>>;
+	 Close:
+	    if (player in self)
+		<<Close pipehatch>>;
+	    <<Close ventilationhatch>>;
+	 Go:
+	    if (noun == w_obj){
+		PlayerTo(vaultpipe);
+		return 3;
+	    }
+	 Enter:
+	    if (fanswitch has on)
+		"The rapidly spinning fan obstructs your way.";
+	],
+	react_before [;
+	 Exit:
+	    if (player in self && fanswitch has on)
+		"The rapidly spinning fan obstructs your way.";
+	],
+ has 	scenery container enterable light;
+
+Object 	-> -> ventilationfan "fan"
+ with	name 'fan' 'blades',
+	description
+	    "A large fan.",
+ has 	static;
+
+Object 	-> -> pipehatch "hatch"
+ with	name 'hatch' 'ventilation' 'white',
+	description
+	    "A white hatch in the ventilation pipe.",
+	initial
+	    "There is a white hatch below the fan.",
+	before [;
+	 Open:
+	    if (fanswitch has on)
+		"You can't reach the hatch safely while the fan's on.";
+	 Close: "That's already closed.";
+	 Take: "That seems to be attached to the ventilation pipe.";
+	],
+	after [;
+	 Open:
+	    give ventilationhatch open;
+	    give pipe openable;
+	    give pipe open;
+	    remove self;
+	],
+ has 	openable;
+
+Object 	-> fanswitch "string"
+ with	name 'string',
+	before [;
+	 Pull:
+	    if (self has on){
+		give self ~on;
+		if (pipe has open)
+		    "The fan stops, and with it the buzzing.";
+		"The buzzing stops.";
+	    }
+	    give self on;
+	    if (pipe has open)
+		"The fan starts up, faintly buzzing as it goes.";
+	    "A faint buzz starts.";
+	],
+ has 	static concealed on;
+
+Object 	-> fanhandle "handle"
+ with	name 'handle',
+	before [;
+	 Pull: <<Pull fanswitch>>;
+	],
+ has 	static concealed;
+
+Object 	-> steps "steps"
+ with	name 'steps' 'stairs',
+	description
+	    "A lonely flight of stairs.",
+	door_to [;
+	    if (mountainpassage in Mountaindoor && topslider.setting == 0)
+		return Mountaindoor;
+	    Passageend.back = 0;
+	    return Passageend;
+	],
+	door_dir nw_to,
+ has 	scenery door open pluralname;
+
+Object 	-> ventilationhatch "hatch"
+ with	name 'hatch' 'ventilation' 'white',
+	description
+	    "A white hatch in the ventilation pipe.",
+	before [;
+	 Enter:
+	    <<Enter pipe>>;
+	 Open:
+	    if (player in pipe)
+		"That's already open.";
+	    "You can't open that from the outside.";
+	 Close:
+	    if (player notin pipe)
+		"You can't close that from the outside.";
+	    if (fanswitch has on)
+		"You can't reach the hatch safely while the fan's on.";
+	 Take: "That seems to be attached to the ventilation pipe.";
+	],
+	after [;
+	 Close:
+	    give pipe ~open;
+	    move pipehatch to pipe;
+	    give pipehatch ~open;
+	],
+ has 	static openable concealed;
+
+Object 	Vault "Vault"
+ with	name 'vault',
+	description [;
+	    if (vaultwater in self)
+		print "Beneath shimmering water ";
+	    else
+		print "At the bottom of the room ";
+	    "are an assortment of gems and perhaps other things, 
+	    mostly hidden within the crevices and ledges that line 
+	    the walls and floor.";
+	],
+	ne_to [;
+	    if (mountainpassage in Mountaindoor && topslider.setting == 9)
+		return Mountaindoor;
+	    Passageend.back = 1;
+	    return Passageend;
+	],
+	u_to [;
+	    <<Enter vaultpipe>>;
+	],
+	d_to vaultladder,
+ has 	light;
+
+Object 	-> vaultpipe "ventilation pipe"
+ with	name 'vent' 'ventilation' 'pipe' 'shaft' 'duct',
+	description
+	    "A large pipe running across the ceiling of the vault.",
+	inside_description
+	    "You are in a large pipe which leads off to the north and east.",
+	initial
+	    "A ventilation duct runs across the ceiling.",
+	before [;
+	 Go:
+	    if (noun == e_obj){
+		PlayerTo(pipe);
+		return 3;
+	    }
+	    if (noun == n_obj){
+		PlayerTo(Colourroom);
+		return 3;
+	    }
+	],
+	after [;
+	 Open:
+	    remove vpinhatch;
+	    "You open the hatch.";
+	 Close:
+	    move vpinhatch to vaultpipe;
+	    "You close the hatch.";
+	],
+ has 	light static enterable container openable;
+
+Object 	-> -> vpinhatch "hatch"
+ with	name 'hatch' 'ventilation',
+	description
+	    "A hatch in the bottom of the ventilation pipe.",
+	initial
+	    "In the bottom of the pipe is a hatch.",
+	before [;
+	 Close: <<Close vaultpipe>>;
+	 Open: <<Open vaultpipe>>;
+	 Take: "That seems to be connected to the ventilation hatch";
+	],
+ has 	static;
+
+Object 	-> vphatch "hatch"
+ with	name 'hatch' 'ventilation',
+	description
+	    "A hatch in the bottom of the ventilation pipe.",
+	before [;
+	 Close: <<Close vaultpipe>>;
+	 Open: <<Open vaultpipe>>;
+	 Take: "That seems to be connected to the ventilation hatch";
+	],
+ has 	static concealed;
+
+Object 	-> vaultwater "water"
+ with	name 'water' 'clear' 'shimmering',
+	description [;
+	    print "Clear water fills the ";
+	    if (self in vault)
+		"vault up to where the northeast-running passage 
+		joins the room.";
+	    "chasm, shimmering in the sunlight.";
+	],
+	initial
+	    "The chasm is full of water.",
+	before [;
+	 Receive:
+	    if (noun == stick){
+		<Drop noun>;
+		"The stick floats to the edge, and comes to rest on 
+		the ground.";
+	    }
+	    if (self in vault)
+		move noun to Vaultbottom;
+	    else
+		move noun to Chasmbottom;
+	    "You drop ", (the) noun, ", which falls to the bottom 
+		beneath the water.";
+	],
+	found_in Chasmtop Chasmw,
+ has 	scenery static absent;
+
+Object 	vaultladder "ladder"
+ with	name 'ladder',
+	description
+	    "A long ladder leading right from the very top of the 
+	    room to the very bottom.",
+	initial [;
+	    print "A ladder leads from the very top of the room, 
+		past where the northeast-running passage joins, and 
+		down to the bottom";
+	    if (vaultwater in Vault)
+		", well beneath the water.";
+	    ".";
+	],
+	before [;
+	 Climb:
+	    if (self in Vaultbottom)
+		<<Enter self>>;
+	    <<Enter vaultpipe>>;
+	],
+	door_to [;
+	    if (vaultwater in Vault)
+		"You can't go down there when it's full of water!";
+	    if (self in Vault)
+		return Vaultbottom;
+	    return Vault;
+	],
+	door_dir [;
+	    if (self in Vault)
+		return d_to;
+	    return u_to;
+	],
+	found_in Vault Vaultbottom,
+ has 	static door open;
+
+Object 	Vaultbottom "Vault"
+ with	name 'vault',
+	description
+	    "Around you lodged in the jagged walls are a variety of 
+	    colourful gems.",
+	u_to vaultladder,
+ has 	light;
+
+Object 	-> gems "gemstones"
+ with	name 'gems' 'gem' 'gemstones' 'gems' 'walls' 'stone' 'stones' 'gemstone',
+	description
+	    "Gems of all sorts of different colours are lodged in 
+	    the jagged walls.",
+	before [;
+	 Take: "They're lodged in the walls.";
+	],
+ has 	scenery pluralname;
+
+Object 	-> gemstone "gemstone"
+ with	name 'gemstone' 'gem' 'coloured' 'stone',
+	description
+	    "A beautifully coloured gemstone.",
+	initial
+	    "One gemstone sits on the floor, separate from the rest.";
+
+Canyon Chasmw "Chasm"
+ with	description
+	    "You are at the western side of a large chasm, within a 
+	    long canyon stretching on this side of the chasm to the 
+	    south-west, and on the other side to the east.",
+	e_to [;
+	    if (raft notin self)
+		"You're not capable of jumping ten yards in one go.";
+	    if (player notin raft)
+		<<Enter raft>>;
+	    return Chasmtop;
+	],
+	ne_to "There's a big chasm in the way.",
+	se_to "There's a big chasm in the way.",
+	sw_to Mountainarch,
+	d_to [;
+	    if (vaultwater in self)
+		"There's no way you'll be able to hold your breath 
+		going all the way down there!";
+	    "Did I forget to mention it's an EXTREMELY DEEP CHASM?";
+	],
+ has 	light;
+
+Object 	Mountainarch "Arched entrance."
+ with	name 'ridge' 'mountain' 'mountainside',
+	description
+	    "From the northward-stretching ridge you stand on you 
+	    can see yet more of the beauty of the island.",
+	n_to Chasmw,
+	e_to stonearch,
+ has 	light;
+
+Object 	-> stonearch "stone arch"
+ with	name 'arch' 'archway' 'entrance',
+	description
+	    "A stone arch set into the side of the mountain.",
+	initial
+	    "A stone arch marks an entrance into the mountain, east 
+	    from where you stand.",
+	door_to Hallway,
+	door_dir e_to,
+ has 	static door open;
+
+Object 	Colourroom "Colour room"
+ with	name 'hallway',
+	description
+	    "This is a little room looking out over a majestic 
+	    hallway. The only safe way out appears to be south.",
+	s_to [;
+	    PlayerTo(vaultpipe);
+	    rtrue;
+	],
+	d_to [;
+	    if (lift notin self)
+		"You can't safely go that way.";
+	    if (player in lift){
+		if (liftbutton has on)
+		    return Hallway;
+		if (liftbutton.used == 1)
+		    <<Push liftbutton>>;
+		"You can't safely go that way.";
+	    }
+	    if (liftbutton.used == 1){
+		print "You enter the lift...";
+		<Enter lift>;
+		print "^...and push the button.^^";
+		<<Push liftbutton>>;
+	    }
+	],
+ has 	light;
+
+Object 	-> colourcontrol "wheels"
+ with	name 'wheels',
+	describe [;
+	    print "^Three wheels, one big central one and two 
+		smaller ones to the right and left, marked 's' and 
+		'q' respectively, are mounted beneath a display of 
+		seven colours; ";
+	    colours.fulllist();
+	    ".";
+	],
+	description [;
+	    print "Three wheels, one big central one and two smaller 
+		ones to the right and left, marked 's' and 'q' 
+		respectively, are mounted beneath a display of seven 
+		colours; ";
+	    colours.fulllist();
+	    ".";
+	],
+	changedoors [i door n;
+	    for (i=0:i<7:i++){
+		door = doorref-->i;
+		if (colour-->i == spindle-->i || colourdoorbutton hasnt on || slabbutton has on)
+		    give door ~open;
+		else {
+		    n++;
+		    give door open;
+		}
+	    }
+	    if (n == 0 && colourdoorbutton has on && slabbutton hasnt on){
+		move goldshimmer to Hallway;
+		if (
+		    colour-->0 == 1 &&
+		    colour-->1 == 5 &&
+		    colour-->2 == 0 &&
+		    colour-->3 == 4 &&
+		    colour-->4 == 2 &&
+		    colour-->5 == 6 &&
+		    colour-->6 == 3
+		    )
+		    goldarch.shimmerfrom = 1;
+		else
+		    goldarch.shimmerfrom = 0;
+		rtrue;
+	    }
+	    goldarch.shimmerfrom = 0;
+	    remove goldshimmer;
+	    rfalse;
+	],
+	lburst [;
+	    if (self.changedoors() == 1){
+		if (goldarch.shimmerfrom == 0)
+		    print "^Faint l";
+		else
+		    print "^L";
+		print "ight bursts in to the hallway.^^";
+	    }
+	],
+ has 	static transparent;
+
+Object 	-> -> wheelq "wheel q"
+ with	name 'wheel' 'q//',
+	description
+	    "A small wheel, to the left of the large central wheel and marked in the centre with a 'q', which can be rotated in discrete amounts clockwise (right) or anti-clockwise (left).",
+	before [a;
+	 Turn, Set, SetTo, SetNum: "To operate this wheel, turn it 
+	    clockwise (right) or anti-clockwise (left).";
+	 TurnRight:
+	    a = colour-->2;
+	    colour-->2 = colour-->1;
+	    colour-->1 = colour-->0;
+	    colour-->0 = a;
+	    if (self.hasturnedr < 3){
+		self.hasturnedr++;
+		print "In the hallway you see the chandelier rotate";
+		if (slabbutton hasnt on)
+		    print ", throwing out a different selection of 
+			colours in streams across the room. ";
+		else
+		    print ".";
+		print " Above the wheels, the three leftmost colours 
+		    rotate round: the first and second move to the 
+		    right, and the third moves round to where the 
+		    first was.^";
+	    }
+	    colourcontrol.lburst();
+	    print "The colours are now: ";
+	    colours.colourlist();
+	    ".";
+	 TurnLeft:
+	    a = colour-->0;
+	    colour-->0 = colour-->1;
+	    colour-->1 = colour-->2;
+	    colour-->2 = a;
+	    if (self.hasturnedl < 3){
+		self.hasturnedl++;
+		print "In the hallway you see the chandelier rotate";
+		if (slabbutton hasnt on)
+		    print ", throwing out a different selection of 
+			colours in streams across the room. ";
+		else
+		    print ".";
+		print " Above the wheels, the three leftmost colours 
+		    rotate round: the second and third move to the 
+		    left, and the first moves round to where the 
+		    third was.^";
+	    }
+	    colourcontrol.lburst();
+	    print "The colours are now: ";
+	    colours.colourlist();
+	    ".";
+	],
+	hasturnedl,
+	hasturnedr,
+ has 	proper;
+
+Object 	-> -> wheels "wheel s"
+ with	name 'wheel' 's//',
+	description
+	    "A small wheel, to the right of the large central wheel 
+	    and marked in the centre with an 's', which can be 
+	    rotated in discrete amounts clockwise (right) or 
+	    anti-clockwise (left).",
+	before [a;
+	 Turn, Set, SetTo, SetNum: "To operate this wheel, turn it 
+	    clockwise (right) or anti-clockwise (left).";
+	 TurnRight:
+	    a = colour-->6;
+	    colour-->6 = colour-->5;
+	    colour-->5 = colour-->4;
+	    colour-->4 = a;
+	    if (self.hasturnedr < 3){
+		self.hasturnedr++;
+		print "In the hallway you see the chandelier rotate";
+		if (slabbutton hasnt on)
+		    print ", throwing out a different selection of 
+			colours in streams across the room. ";
+		else
+		    print ".";
+		print " Above the wheels, the three rightmost 
+		    colours rotate round: the fifth and sixth move 
+		    to the right, and the seventh moves round to 
+		    where the fifth was.^";
+	    }
+	    colourcontrol.lburst();
+	    print "The colours are now: ";
+	    colours.colourlist();
+	    ".";
+	 TurnLeft:
+	    a = colour-->4;
+	    colour-->4 = colour-->5;
+	    colour-->5 = colour-->6;
+	    colour-->6 = a;
+	    if (self.hasturnedl < 3){
+		self.hasturnedl++;
+		print "In the hallway you see the chandelier rotate";
+		if (slabbutton hasnt on)
+		    print ", throwing out a different selection of 
+			colours in streams across the room. ";
+		else
+		    print ".";
+		print " Above the wheels, the three rightmost 
+		    colours rotate round: the sixth and seventh move 
+		    to the left, and the fifth moves round to where 
+		    the seventh was.^";
+	    }
+	    colourcontrol.lburst();
+	    print "The colours are now: ";
+	    colours.colourlist();
+	    ".";
+	],
+	hasturnedl,
+	hasturnedr,
+ has 	proper;
+
+Object 	-> -> centrewheel "central wheel"
+ with	name 'central' 'centre' 'wheel',
+	description
+	    "A large wheel which can be rotated in discrete amounts 
+	    clockwise (right) or anti-clockwise (left).",
+	before [a i;
+	 Turn, Set, SetTo, SetNum: "To operate this wheel, turn it 
+	    clockwise (right) or anti-clockwise (left).";
+	 TurnRight:
+	    a = colour-->6;
+	    for (i=6:i>0:i--){
+		colour-->i = colour-->(i-1);
+	    }
+	    colour-->0 = a;
+	    if (self.hasturnedr < 3){
+		self.hasturnedr++;
+		print "In the hallway you see the chandelier rotate";
+		if (slabbutton hasnt on)
+		    print ", throwing out a different selection of 
+			colours in streams across the room. ";
+		else
+		    print ".";
+		print " Above the wheels, all seven colours rotate 
+		    round; the first to sixth move one place to the 
+		    right, and the seventh colour moves round to the 
+		    first place.^";
+	    }
+	    colourcontrol.lburst();
+	    print "The colours are now: ";
+	    colours.colourlist();
+	    ".";
+	 TurnLeft:
+	    a = colour-->0;
+	    for (i=0:i<6:i++){
+		colour-->i = colour-->(i+1);
+	    }
+	    colour-->6 = a;
+	    if (self.hasturnedl < 3){
+		self.hasturnedl++;
+		print "In the hallway you see the chandelier rotate";
+		if (slabbutton hasnt on)
+		    print ", throwing out a different selection of 
+			colours in streams across the room. ";
+		else
+		    print ".";
+		print " Above the wheels, all seven colours rotate 
+		    round; the second to seventh move one place to 
+		    the left, and the first colour moves round to 
+		    the seventh place.^";
+	    }
+	    colourcontrol.lburst();
+	    print "The colours are now: ";
+	    colours.colourlist();
+	    ".";
+	],
+	hasturnedl,
+	hasturnedr;
+
+Object 	-> -> colours "display of colours"
+ with	name 'colour' 'colours' 'display' 'of',
+	description [;
+	    print "A series of seven colours: ";
+	    self.fulllist();
+	    ".";
+	],
+	before [;
+	 Take: "They're fixed in place.";
+	],
+	fulllist [i;
+	    for (i=0:i<6:i++){
+		print (address) colourname-->(colour-->i), ", ";
+	    }
+	    print (address) colourname-->(colour-->6);
+	],
+	colourlist [i;
+	    for (i=0:i<7:i++){
+		print (char) colourletter-->(colour-->i), " ";
+	    }
+	];
+
+Object 	-> lift "lift"
+ with	name 'lift' 'square' 'platform',
+	description [;
+	    print "A square platform, ";
+	    if (self in Colourroom)
+		print "hanging over the edge of the hallway";
+	    else
+		print "resting on the ground";
+	    ", large enough for a person to stand on.";
+	],
+	initial [;
+	    if (self in Colourroom)
+		"A lift hangs over the edge of the hallway.";
+	    "A lift sits on the ground in the corner.";
+	],
+	before [;
+	 Go:
+	    if (self in Colourroom && noun == d_obj)
+		return 1;
+	    if (self in Hallway && noun == u_obj)
+		return 1;
+	],
+ has 	static supporter enterable;
+
+Object 	-> -> liftbutton "button"
+ with	name 'button',
+	description
+	    "It's the sort of button one might push, and it's 
+	    connected to the lift.",
+	before [;
+	 Push, Set:
+	    if (waterswitch has on || epowerdial.setting == 2){
+		if (lift in Colourroom){
+		    give manhole absent;
+		    if (player in lift){
+			self.used = 1;
+			give self on;
+			<Go d_obj>;
+			give self ~on;
+		    }
+		    else
+			move lift to Hallway;
+		    "The lift lowers itself to the bottom of the 
+		    hallway.";
+		}
+		give manhole ~absent;
+		if (player in lift){
+		    self.used = 1;
+		    print ".";
+		    give self on;
+		    <Go u_obj>;
+		    give self ~on;
+		    "The lift raises itself to the colour room.";
+		}
+		else
+		    "You can't reach the button from this side of 
+		    the lift.";
+	    }
+	    "Pushing the button has no effect.";
+	],
+	used,
+ has 	static;
+
+[DarkToDark;
+    print "^You feel your way along in the darkness.^";
+    
+];
+
+[ChooseObjects Obj Code;
+    if (Code < 2){
+	if (Obj has concealed)
+	    return 2;
+	rfalse;
+    }
+    if (Obj == stick) return 3;
+    if (Obj == shedkey) return 3;
+    if (Obj == gemstone) return 3;
+    if (Obj == mainhole) return 2;
+    if (Obj == boat) return 2;
+    if (Obj == liftbutton) return 2;
+    return 1;
+];
+
+[DrawStatusLine width posa posb;
+    @split_window 1;
+    @set_window 1;
+    @set_cursor 1 1;
+    style reverse;
+    width = 0->33;
+    posa = width-26;
+    posb = width-14;
+    spaces (width);
+    @set_cursor 1 2;
+    PrintShortName(location);
+    @set_cursor 1 1;
+    style roman;
+    @set_window 0;
+];
+
+[Initialise;
+    <LMode2>;
+    codelock.codecreate();
+    codedoor.codecreate();
+    @erase_window 0;
+    if (releasetype == 0)
+	Titleboxa();
+    if (releasetype == 1)
+	BetaInstructions();
+    location = Boat;
+    "^^~Crunch!~ Oh dear, that can't have done the outboard motor 
+    any good. At least you made it here... even if you do have to 
+    find a different way home.^";
+];
+
+[Titleboxa;
+    box	"************************************"
+	"*The Search for the Missing Penguin*"
+	"*************Version 2**************"
+	"***********Alpha Release************"
+	"************************************";
+    return;
+];
+
+[Titleboxb;
+    box	"************************************"
+	"*The Search for the Missing Penguin*"
+	"************Version 2.4*************"
+	"************Beta Release************"
+	"************************************";
+    return;
+];
+
+[BetaInstructions k i;
+    Titleboxb();
+    print "^^^Please save the transcript of this, and e-mail it to 
+	me at pngwnb", (char) 64, "halaktic.co.uk^
+	press any key to continue...";
+    @read_char 1 -> k;
+    <ScriptOn>;
+    @erase_window 0;
+    Titleboxb();
+    print "^^^Thank you for helping in the development of ~The Search 
+	for the Missing Penguin~. Please type your name as you would 
+	like it to appear in the credits:^>";
+    read buffer parse;
+    print "^^^You are now ready to play.^ If you encounter a bug or 
+	have a suggestion, please type ~*~ followed by information 
+	about the bug or suggestion.^ If you have any problems, or 
+	have not beta tested this version before, type ~help~ during 
+	the game.^ Do you want to START the game, learn the BASICS 
+	of playing or RESTORE a saved game?^";
+    while (i ~= 'start'){
+	print ">";
+	i = 0;
+	read buffer parse;
+	i = parse-->1;
+	if (i == RESTORE__WD)
+	    RestoreSub();
+	else if (i == QUIT1__WD || i == QUIT2__WD || i == NO1__WD || i == NO2__WD || i == NO3__WD)
+	    quit;
+	else if (i == 'basics'){
+	    BasicsSub();
+	    print "^Do you want to START the game, look again at the 
+		BASICS or RESTORE a saved game?^";
+	}
+	else
+	    print "Please reply either ~start~, ~basics~. ~restore~ 
+		or ~quit~.";
+    }
+    @erase_window 0;
+    return;
+];
+
+[ColossalMagicSub;
+    "You are certain you saw a faint glimpse of orange, but somehow 
+    you're still here.";
+];
+
+[WhySub;
+    "That's for me to know, and you to spend hours puzzling out!";
+];
+
+[HelpSub;
+    "For basic instructions on how to play, type ~basics~;^ For 
+    information on how to contact me, type ~contact~;^ If you want 
+    to point out a bug, or you have a suggestion, please type ~*~, 
+    followed by whatever you want to say - e.g. ~* you misspelled 
+    path~. Thank you.^ Beware: If you have played a previous beta 
+    version of this game, do not assume all locations are as you 
+    found them last time.^ Also beware: In order to do anything to 
+    an object, such as get it, you must either be holding it or able 
+    to see it. If you drop your only light source in the dark and 
+    cover it up, you will not be able to see it to get it again...^ 
+    Further help files have not been written yet. I am sorry for any 
+    inconvenience caused.";
+];
+
+[BasicsSub;
+	"^To play the game:^ Type in commands on the command line, 
+    e.g. ~take brass lantern~, or even simply ~get lantern~. 
+    Commands must always begin with a verb, so ~I want to get the 
+    brass lantern~ will not work, whereas ~get the brass lantern~ 
+    will.^ Navigation around the map is done using compass 
+    directions, unless otherwise stated, so for speed, instead of 
+    typing ~go southwest~, ~sw~ will suffice.^ To look at the 
+    location that you're in, simply type ~look~ or ~l~.^ When 
+    referring to an object, shortened names are often recognised, 
+    along with many of the object's attributes. For example, a blue, 
+    bouncy ball can often be referred to as ~blue~, or even 
+    ~bouncy~. This can be useful when ambiguities arise, for example 
+    if in a location both a ~pink rabbit~ and a ~gigantic rabbit~ 
+    are present, typing ~get rabbit~ will prompt ~Which one, the 
+    pink rabbit or the gigantic rabbit?~ This can be resolved by 
+    typing, for example, ~pink~. However, if the gigantic rabbit 
+    also has the name pink, the question of which one will arise 
+    again. At this a player might examine the pink rabbit, and 
+    notice that it says ~a woollen pink toy rabbit~, so ~woollen~ or 
+    ~toy~ should differentiate between the two.^ Remember to examine 
+    all objects, in case there is something not immediately obvious 
+    about them, and search all containers.^ If a particular verb is 
+    not recognised, or is recognised as something else, try using a 
+    synonym or a different verb which means the same thing.^ ^ 
+    Useful abbreviations:^ Examine: ~x~^ Look: ~l~^ Inventory: ~i~^";
+];
+
+[ContactSub;
+    "Please send any correspondence about this game, including 
+    transcripts, to pngwnb", (char) 64, "halaktic.co.uk or use the
+    GitHub repository, https://github.com/leklachu/pngwn";
+];
+
+[ReadSub;
+    <<Examine noun>>;
+];
+
+[PhotographSub;
+    if (camera notin player)
+	"You need a camera to do that.";
+    "You're going to need batteries to make that thing work.";
+];
+
+[NpraySub;
+    "Ok.";
+];
+
+[WhistleSub;
+    "You would have much to achieve at whistling lessons.";
+];
+
+[HooraySub;
+    "I'm glad to see you're so enthusiastic.";
+];
+
+[MendSub;
+    "You would achieve nothing by this.";
+];
+
+[DescendSub;
+    <<Go d_obj>>;
+];
+
+[WinSub;
+    print "Do you really want to win? ";
+    if (YesOrNo() ~= 0){
+	if (releasetype == 1)
+	    "This is a beta release. You have to find out how to win 
+	    properly, rather than cheating!!!";
+	Deadflag = 2;
+    }
+];
+
+[NeatSub k;
+    if (noun has static or scenery)
+	<<Eat noun>>;
+    if (parent(noun) ~= player){
+	k = keep_silent;
+	keep_silent = 1;
+	<Take noun>;
+	print "(first taking ", (the) noun, ")^";
+	keep_silent = k;
+    }
+    <<Eat noun>>;
+];
+
+[TalkSub;
+    "Did you know the first sign of madness is talking to one's 
+    self?";
+];
+
+[TalktoSub;
+    "You'll need to tell me what to say.";
+];
+
+[LookforSub;
+    "Yep. Found it.";
+];
+
+[UseSub;
+    "You'll have to say what to do with ", (the) noun, ".";
+];
+
+! Credits were built at school, with no thought to privacy; have
+! removed names for putting on internet. Can re-add with individuals'
+! permission
+[CreditsSub;
+    "The Search for the Missing Penguin, created using Inform software.^
+    ^
+    This game was designed and created at school, and for that 
+    reason names in the credits have been removed. Many thanks are 
+    still due to those who helped inspire and test the original 
+    game, and those who helped are more than welcome to be listed in 
+    the credits; please file an issue on the github page 
+    (leklachu/pngwn) or send an email to pngwnb", (char) 64,
+    "halaktic.co.uk.";
+];
+
+[SetNumSub;
+    "No, you can't set ", (thatorthose) noun, " to anything.";
+];
+
+[LaughSub;
+    "I don't see what's so funny.";
+];
+
+[VagueAttackSub;
+    "You'll have to say what to hit with ", (the) noun, ".";
+];
+
+[TurnRightSub;
+    "You can't turn ", (the) noun, " to the right.";
+];
+
+[TurnLeftSub;
+    "You can't turn ", (the) noun, " to the left.";
+];
+
+[ MegaExam obj; print "^", (a) obj, ": "; <Examine obj>; ];
+
+[ MegaLookSub;
+    if(Releasetype ~= 0)
+	"You'll have to look yourself.";
+    <Look>; LoopOverScope(MegaExam);
+];
+
+Include "Grammar";
+
+Verb meta 'megalook' * -> MegaLook;
+Verb 'on' * noun -> SwitchOn;
+Verb 'off' * noun -> SwitchOff;
+Verb 'ford' * noun -> Enter;
+Verb 'xyzzy' 'plugh' 'plover' * -> ColossalMagic;
+Verb 'why' 'why?'
+    *					-> Why
+    * 'not'/'not?'			-> Why
+    * noun				-> Why;
+Verb 'help' 'help!'
+    *					-> Help
+    * noun				-> Help
+    * topic				-> Help;
+Verb 'basics' * -> Basics;
+Verb 'contact' * -> Contact;
+Verb 'roll' * noun -> Push;
+Verb 'photograph' 'photo'
+    * noun				-> Photograph
+    * 'of' noun				-> Photograph;
+Verb 'whistle'
+    *					-> Whistle
+    * topic				-> Whistle;
+Verb 'mend'
+    *					-> Mend
+    * noun				-> Mend;
+Verb 'yes!' 'yeah' 'yep' * -> Yes;
+Verb 'yippie' 'yippie!' 'yippee' 'yippee!' 'hooray' 'hooray!' 'yey' 'yay' 'yey!' 'yay!'
+    *					-> Hooray
+    * topic				-> Hooray;
+Verb 'snap' * noun -> Attack;
+Verb 'descend'
+    *					-> Descend
+    * noun				-> Enter;
+Verb 'study' * noun -> Examine;
+Verb 'win' * -> Win;
+Verb 'stab' * noun -> Attack;
+Verb 'talk'
+    *					-> Talk
+    * 'to' 'self'/'myself'		-> Talk
+    * 'to' creature			-> Talkto;
+Verb 'use' * noun -> Use;
+Verb 'dislodge' * noun -> Push;
+Verb 'input' 'type'
+    * number 'in'/'into' noun		-> SetNum reverse
+    * special 'in'/'into' noun		-> SetTo reverse;
+Verb 'credits' * -> Credits;
+Verb 'see' * 'credits' -> Credits;
+Verb 'laugh'
+    *					-> Laugh
+    * 'about' topic			-> Laugh
+    * 'at' noun				-> Laugh;
+Verb 'nibble' 'gnaw'
+    * noun				-> Taste
+    * 'on' noun				-> Taste;
+Verb 'frighten' * creature -> Attack;
+Extend 'read' first * legible -> Read;
+Extend 'look'
+    * noun				-> Examine
+    * 'for' noun			-> Lookfor;
+Extend 'pray' first
+    * 					-> Npray
+    * topic				-> Npray;
+Extend 'go'
+    * 'to' noun				-> Enter
+    * 'over' noun			-> Enter;
+Extend 'dig' first
+    *					-> Dig
+    * 'with' held			-> Dig;
+Extend 'yes' * topic -> Yes;
+Extend 'go'
+    * 'to' 'sleep'			-> Sleep
+    * 'up' noun				-> Climb
+    * 'down' noun			-> Enter
+    * 'under'/'across' noun		-> Enter
+    * 'along'/'on' noun			-> Enter;
+Extend 'cut' first * noun 'with' held -> Cut;
+Extend 'eat' first * noun -> Neat;
+Extend 'get'
+    * 'out' noun			-> Exit
+    * 'out' 'of' noun			-> Exit;
+Extend 'cut' * 'down' noun -> Cut;
+Extend 'display' * 'credits' -> Credits;
+Extend 'set' first
+    * noun				-> Set
+    * noun 'to' number			-> SetNum;
+Extend 'attack'
+    * 'with' held			-> VagueAttack
+    * noun 'with' held			-> Attack;
+Extend 'jump' * 'into'/'in' noun -> Enter;
+Extend 'turn'
+    * noun 'clockwise'/'right' 		-> TurnRight
+    * noun 'anti-clockwise'/'left' 	-> TurnLeft
+    * noun 'to' special 		-> SetTo;
+Extend 'enter'
+    * number 'in'/'into' noun		-> SetNum reverse
+    * special 'in'/'into' noun		-> SetTo reverse;
